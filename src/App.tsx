@@ -9,7 +9,7 @@ import { Dashboard } from './components/Dashboard';
 import { Inventory } from './components/Inventory';
 import { POSSystem } from './components/POSSystem';
 import { SalesHistory } from './components/SalesHistory';
-import { Toaster } from '@/components/ui/Sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
