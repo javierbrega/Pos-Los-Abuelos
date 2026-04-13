@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Settings, LogOut, History } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pos', label: 'Punto de Venta', icon: ShoppingCart },
     { id: 'inventory', label: 'Inventario', icon: Package },
+    { id: 'sales', label: 'Historial de Ventas', icon: History },
   ];
 
   return (

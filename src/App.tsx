@@ -8,6 +8,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Inventory } from './components/Inventory';
 import { POSSystem } from './components/POSSystem';
+import { SalesHistory } from './components/SalesHistory';
 import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'pos' && <POSSystem />}
         {activeTab === 'inventory' && <Inventory />}
+        {activeTab === 'sales' && <SalesHistory />}
       </Layout>
       <Toaster position="top-right" />
     </>
