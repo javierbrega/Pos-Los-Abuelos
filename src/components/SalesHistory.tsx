@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Sale, SaleItem } from '@/lib/supabase';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Trash2, Eye, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 
