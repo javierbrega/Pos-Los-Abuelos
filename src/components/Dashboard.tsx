@@ -144,7 +144,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  ${deuda.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  ${Number(deuda).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
                   Costo total de mercadería vendida
