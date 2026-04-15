@@ -21,7 +21,9 @@ export function Inventory() {
     precio_venta: '',
     stock_actual: '',
     categoria: '',
-    proveedor_id: ''
+    proveedor_id: '',
+    peso_kg: '',
+    precio_suelto: ''
   });
 
   useEffect(() => {
@@ -83,7 +85,9 @@ export function Inventory() {
       precio_venta: product.precio_venta.toString(),
       stock_actual: product.stock_actual.toString(),
       categoria: product.categoria,
-      proveedor_id: product.proveedor_id || ''
+      proveedor_id: product.proveedor_id || '',
+      peso_kg: product.peso_kg ? product.peso_kg.toString() : '',
+      precio_suelto: product.precio_suelto ? product.precio_suelto.toString() : ''
     });
     setIsDialogOpen(true);
   };
@@ -97,7 +101,9 @@ export function Inventory() {
       precio_venta: '', 
       stock_actual: '', 
       categoria: '', 
-      proveedor_id: proveedores.length > 0 ? proveedores[0].id : '' 
+      proveedor_id: proveedores.length > 0 ? proveedores[0].id : '',
+      peso_kg: '',
+      precio_suelto: ''
     });
     setIsDialogOpen(true);
   };
@@ -105,14 +111,19 @@ export function Inventory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const selectedProveedor = proveedores.find(p => p.id === formData.proveedor_id);
+      
       const productData = {
         nombre: formData.nombre,
         sku: formData.sku,
         precio_costo: parseFloat(formData.precio_costo),
         precio_venta: parseFloat(formData.precio_venta),
-        stock_actual: parseInt(formData.stock_actual, 10),
+        stock_actual: parseFloat(formData.stock_actual), // Allow decimal stock for "sueltos"
         categoria: formData.categoria,
-        proveedor_id: formData.proveedor_id || null
+        proveedor_id: formData.proveedor_id || null,
+        proveedor: selectedProveedor ? selectedProveedor.nombre : 'Sin proveedor', // Mantenemos compatibilidad con la columna anterior
+        peso_kg: formData.peso_kg ? parseFloat(formData.peso_kg) : null,
+        precio_suelto: formData.precio_suelto ? parseFloat(formData.precio_suelto) : null
       };
 
       if (editingProduct) {
@@ -132,9 +143,9 @@ export function Inventory() {
 
       setIsDialogOpen(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
-      toast.error('Error al guardar el producto');
+      toast.error(`Error al guardar: ${error?.message || 'Verifica los datos'}`);
     }
   };
 
@@ -222,7 +233,7 @@ export function Inventory() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="stock_actual" className="text-sm font-medium leading-none">Stock Inicial</label>
-                  <input id="stock_actual" name="stock_actual" type="number" value={formData.stock_actual} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                  <input id="stock_actual" name="stock_actual" type="number" step="0.01" value={formData.stock_actual} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="categoria" className="text-sm font-medium leading-none">Categoría</label>
@@ -230,21 +241,56 @@ export function Inventory() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="proveedor_id" className="text-sm font-medium leading-none">Proveedor</label>
-                <select 
-                  id="proveedor_id" 
-                  name="proveedor_id" 
-                  value={formData.proveedor_id} 
-                  onChange={handleInputChange} 
-                  className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                >
-                  <option value="" disabled>Seleccione un proveedor</option>
-                  {proveedores.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre} ({p.empresa})</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="proveedor_id" className="text-sm font-medium leading-none">Proveedor</label>
+                  <select 
+                    id="proveedor_id" 
+                    name="proveedor_id" 
+                    value={formData.proveedor_id} 
+                    onChange={handleInputChange} 
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="" disabled>Seleccione un proveedor</option>
+                    {proveedores.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre} ({p.empresa})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="peso_kg" className="text-sm font-medium leading-none">
+                    Peso del envase (Kg) <span className="text-slate-400 font-normal">- Opcional</span>
+                  </label>
+                  <input 
+                    id="peso_kg" 
+                    name="peso_kg" 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.peso_kg} 
+                    onChange={handleInputChange} 
+                    placeholder="Ej: 15"
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="precio_suelto" className="text-sm font-medium leading-none">
+                    Precio Suelto por Kg ($) <span className="text-slate-400 font-normal">- Opcional</span>
+                  </label>
+                  <input 
+                    id="precio_suelto" 
+                    name="precio_suelto" 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.precio_suelto} 
+                    onChange={handleInputChange} 
+                    placeholder="Ej: 2500"
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end pt-4">

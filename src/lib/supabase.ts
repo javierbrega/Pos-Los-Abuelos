@@ -18,7 +18,10 @@ export type Proveedor = {
 export type CierreCaja = {
   id: string;
   fecha: string;
+  saldo_apertura: number;
   total_ventas: number;
+  total_efectivo: number;
+  total_transferencias: number;
   costo_mercaderia: number;
   ganancia_neta: number;
   retiro_ganancia: number;
@@ -35,6 +38,8 @@ export type Product = {
   categoria: string;
   proveedor_id?: string;
   proveedor?: string; // For backward compatibility if needed
+  peso_kg?: number;
+  precio_suelto?: number;
   created_at?: string;
 };
 
