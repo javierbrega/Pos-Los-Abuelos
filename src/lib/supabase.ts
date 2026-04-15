@@ -7,6 +7,24 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Types for our database
+export type Proveedor = {
+  id: string;
+  nombre: string;
+  empresa: string;
+  telefono: string;
+  created_at?: string;
+};
+
+export type CierreCaja = {
+  id: string;
+  fecha: string;
+  total_ventas: number;
+  costo_mercaderia: number;
+  ganancia_neta: number;
+  retiro_ganancia: number;
+  created_at?: string;
+};
+
 export type Product = {
   id: string;
   nombre: string;
@@ -15,7 +33,8 @@ export type Product = {
   precio_venta: number;
   stock_actual: number;
   categoria: string;
-  proveedor: string;
+  proveedor_id?: string;
+  proveedor?: string; // For backward compatibility if needed
   created_at?: string;
 };
 

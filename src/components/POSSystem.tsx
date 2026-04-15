@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Product } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { supabase, Product } from '../lib/supabase';
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +26,12 @@ export function POSSystem() {
     try {
       const { data, error } = await supabase
         .from('productos')
-        .select('*')
+        .select(`
+          *,
+          proveedores (
+            nombre
+          )
+        `)
         .or(`nombre.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`)
         .limit(5);
       
@@ -110,7 +111,7 @@ export function POSSystem() {
             precio_unitario: item.precio_venta,
             subtotal: item.precio_venta * item.cantidad,
             precio_costo: item.precio_costo,
-            proveedor: item.proveedor
+            proveedor: item.proveedor_id || item.proveedor
           }]);
         
         if (itemError) throw itemError;
@@ -135,6 +136,13 @@ export function POSSystem() {
     }
   };
 
+  const getSupplierName = (product: any) => {
+    if (product.proveedores && product.proveedores.nombre) {
+      return product.proveedores.nombre;
+    }
+    return product.proveedor || 'Sin proveedor';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -145,16 +153,16 @@ export function POSSystem() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Search and Results */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-slate-800">Buscar Productos</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div className="flex flex-col space-y-1.5 p-6 pb-3">
+              <h3 className="font-semibold leading-none tracking-tight text-lg text-slate-800">Buscar Productos</h3>
+            </div>
+            <div className="p-6 pt-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <Input 
+                <input 
                   placeholder="Escribe el nombre o SKU del producto..." 
-                  className="pl-10 text-lg py-6"
+                  className="flex w-full rounded-md border border-slate-300 bg-transparent px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent pl-10 h-14 text-lg"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -162,66 +170,67 @@ export function POSSystem() {
 
               {products.length > 0 && (
                 <div className="mt-4 border border-slate-200 rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead>Producto</TableHead>
-                        <TableHead>Proveedor</TableHead>
-                        <TableHead className="text-right">Precio</TableHead>
-                        <TableHead className="text-right">Stock</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map(product => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <div className="font-medium text-slate-900">{product.nombre}</div>
-                            <div className="text-xs text-slate-500">SKU: {product.sku}</div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">{product.proveedor}</span>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            ${product.precio_venta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              product.stock_actual > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {product.stock_actual}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              size="sm" 
-                              onClick={() => addToCart(product)}
-                              disabled={product.stock_actual <= 0}
-                              className="bg-slate-900 hover:bg-slate-800 text-white"
-                            >
-                              Agregar
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="w-full overflow-auto">
+                    <table className="w-full caption-bottom text-sm">
+                      <thead className="[&_tr]:border-b bg-slate-50">
+                        <tr className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-slate-500">Producto</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-slate-500">Proveedor</th>
+                          <th className="h-12 px-4 text-right align-middle font-medium text-slate-500">Precio</th>
+                          <th className="h-12 px-4 text-right align-middle font-medium text-slate-500">Stock</th>
+                          <th className="h-12 px-4 align-middle font-medium text-slate-500"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="[&_tr:last-child]:border-0">
+                        {products.map(product => (
+                          <tr key={product.id} className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
+                            <td className="p-4 align-middle">
+                              <div className="font-medium text-slate-900">{product.nombre}</div>
+                              <div className="text-xs text-slate-500">SKU: {product.sku}</div>
+                            </td>
+                            <td className="p-4 align-middle">
+                              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">{getSupplierName(product)}</span>
+                            </td>
+                            <td className="p-4 align-middle text-right font-medium">
+                              ${product.precio_venta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-4 align-middle text-right">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                product.stock_actual > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {product.stock_actual}
+                              </span>
+                            </td>
+                            <td className="p-4 align-middle text-right">
+                              <button 
+                                onClick={() => addToCart(product)}
+                                disabled={product.stock_actual <= 0}
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-slate-900 text-white hover:bg-slate-800 h-9 px-3"
+                              >
+                                Agregar
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Cart and Checkout */}
         <div className="lg:col-span-1">
-          <Card className="border-slate-200 shadow-sm h-full flex flex-col">
-            <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-              <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+          <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full flex flex-col">
+            <div className="flex flex-col space-y-1.5 p-6 pb-3 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+              <h3 className="font-semibold leading-none tracking-tight text-lg text-slate-800 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 Carrito Actual
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-0">
+              </h3>
+            </div>
+            <div className="p-6 pt-0 flex-1 overflow-y-auto px-0 py-0">
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                   <ShoppingCart className="h-12 w-12 mb-2 opacity-20" />
@@ -236,19 +245,19 @@ export function POSSystem() {
                           <h4 className="font-medium text-slate-900 line-clamp-2">{item.nombre}</h4>
                           <p className="text-sm text-slate-500">${item.precio_venta.toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u</p>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 -mr-2 -mt-1" onClick={() => removeFromCart(item.id)}>
+                        <button onClick={() => removeFromCart(item.id)} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-red-600 h-8 w-8 text-slate-400 -mr-2 -mt-1">
                           <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </button>
                       </div>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center border border-slate-200 rounded-md">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => updateQuantity(item.id, -1)}>
+                          <button onClick={() => updateQuantity(item.id, -1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 rounded-none">
                             <Minus className="h-3 w-3" />
-                          </Button>
+                          </button>
                           <span className="w-10 text-center text-sm font-medium">{item.cantidad}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => updateQuantity(item.id, 1)}>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 rounded-none">
                             <Plus className="h-3 w-3" />
-                          </Button>
+                          </button>
                         </div>
                         <div className="font-bold text-slate-900">
                           ${(item.precio_venta * item.cantidad).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
@@ -258,8 +267,8 @@ export function POSSystem() {
                   ))}
                 </div>
               )}
-            </CardContent>
-            <CardFooter className="flex-col border-t border-slate-200 bg-slate-50 p-4 rounded-b-xl space-y-4">
+            </div>
+            <div className="flex items-center p-6 flex-col border-t border-slate-200 bg-slate-50 rounded-b-xl space-y-4">
               
               {/* Payment Method Selector */}
               <div className="w-full space-y-2">
@@ -296,15 +305,15 @@ export function POSSystem() {
                   ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <Button 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6"
+              <button 
+                className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6 h-14"
                 disabled={cart.length === 0 || loading}
                 onClick={confirmSale}
               >
                 {loading ? 'Procesando...' : 'Confirmar Venta'}
-              </Button>
-            </CardFooter>
-          </Card>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

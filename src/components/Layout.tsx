@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, Package, Settings, LogOut, History } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Settings, LogOut, History, Users, Calculator, AlertTriangle } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +12,10 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pos', label: 'Punto de Venta', icon: ShoppingCart },
     { id: 'inventory', label: 'Inventario', icon: Package },
+    { id: 'suppliers', label: 'Proveedores', icon: Users },
+    { id: 'shortages', label: 'Faltantes', icon: AlertTriangle },
     { id: 'sales', label: 'Historial de Ventas', icon: History },
+    { id: 'cash', label: 'Cierre de Caja', icon: Calculator },
   ];
 
   return (
@@ -21,7 +24,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
       <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-emerald-400">Los Abuelos</h1>
-          <p className="text-sm text-slate-400 mt-1">Corralón & Materiales</p>
+          <p className="text-sm text-slate-400 mt-1">Corralón</p>
         </div>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">
