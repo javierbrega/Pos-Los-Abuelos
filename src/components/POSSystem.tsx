@@ -12,6 +12,7 @@ interface CartItem extends Product {
 
 export function POSSystem() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,14 +20,26 @@ export function POSSystem() {
   const [sueltoModal, setSueltoModal] = useState<{isOpen: boolean, product: Product | null, kg: string}>({isOpen: false, product: null, kg: ''});
 
   useEffect(() => {
-    if (searchTerm.length > 2) {
-      searchProducts();
-    } else {
-      setProducts([]);
-    }
-  }, [searchTerm]);
+    fetchAllProducts();
 
-  async function searchProducts() {
+    // Subscribe to realtime changes in productos
+    const productosSubscription = supabase
+      .channel('pos-productos-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'productos' },
+        () => {
+          fetchAllProducts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(productosSubscription);
+    };
+  }, []);
+
+  async function fetchAllProducts() {
     try {
       const { data, error } = await supabase
         .from('productos')
@@ -35,16 +48,31 @@ export function POSSystem() {
           proveedores (
             nombre
           )
-        `)
-        .or(`nombre.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`)
-        .limit(5);
+        `);
       
       if (error) throw error;
-      setProducts(data || []);
+      setAllProducts(data || []);
     } catch (error) {
-      console.error('Error searching products:', error);
+      console.error('Error fetching products:', error);
     }
   }
+
+  const normalizeText = (text: string) => {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  };
+
+  useEffect(() => {
+    if (searchTerm.trim().length > 0) {
+      const normalizedSearch = normalizeText(searchTerm);
+      const filtered = allProducts.filter(p => 
+        normalizeText(p.nombre).includes(normalizedSearch) || 
+        normalizeText(p.sku).includes(normalizedSearch)
+      ).slice(0, 8); // Show up to 8 results
+      setProducts(filtered);
+    } else {
+      setProducts([]);
+    }
+  }, [searchTerm, allProducts]);
 
   const addToCart = (product: Product) => {
     const stock = Number(product.stock_actual) || 0;

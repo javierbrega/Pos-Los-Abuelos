@@ -66,9 +66,14 @@ export function Inventory() {
     }
   }
 
+  const normalizeText = (text: string) => {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  };
+
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const normalizedSearch = normalizeText(searchTerm);
+    const matchesSearch = normalizeText(p.nombre).includes(normalizedSearch) || 
+                          normalizeText(p.sku).includes(normalizedSearch);
     const matchesSupplier = supplierFilter === '' || p.proveedor_id === supplierFilter;
     return matchesSearch && matchesSupplier;
   });
