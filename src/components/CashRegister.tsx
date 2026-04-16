@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, Sale, SaleItem } from '../lib/supabase';
-import { Calculator, DollarSign, TrendingUp, Save, List } from 'lucide-react';
+import { supabase, Sale, SaleItem, CierreCaja } from '../lib/supabase';
+import { Calculator, DollarSign, TrendingUp, Save, List, History, Printer, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 type DetailedItem = {
@@ -21,6 +21,12 @@ export function CashRegister() {
   const [retiroGanancia, setRetiroGanancia] = useState<string>('');
   const [saldoApertura, setSaldoApertura] = useState<string>('');
   const [activeModal, setActiveModal] = useState<'ventas' | 'costos' | 'ganancias' | null>(null);
+  const [viewMode, setViewMode] = useState<'actual' | 'historial'>('actual');
+  const [history, setHistory] = useState<CierreCaja[]>([]);
+  const [unclosedDates, setUnclosedDates] = useState<string[]>([]);
+  const [printingCierre, setPrintingCierre] = useState<CierreCaja | null>(null);
+  const [isTodayClosed, setIsTodayClosed] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const [stats, setStats] = useState({
     totalVentas: 0,
@@ -31,21 +37,71 @@ export function CashRegister() {
   });
 
   useEffect(() => {
-    fetchTodaySales();
-  }, []);
+    if (viewMode === 'actual') {
+      fetchTodaySales();
+    } else {
+      fetchHistory();
+    }
+  }, [viewMode, selectedDate]);
+
+  async function fetchHistory() {
+    try {
+      setLoading(true);
+      const { data: cierresData, error } = await supabase
+        .from('cierres_caja')
+        .select('*')
+        .order('fecha', { ascending: false });
+      
+      if (error) throw error;
+      setHistory(cierresData || []);
+
+      // Find unclosed dates
+      const { data: ventasData } = await supabase
+        .from('ventas')
+        .select('created_at');
+        
+      if (ventasData) {
+        const uniqueDates = Array.from(new Set(ventasData.map(v => v.created_at.split('T')[0])));
+        const closedDates = new Set((cierresData || []).map(c => c.fecha));
+        const unclosed = uniqueDates.filter(d => !closedDates.has(d)).sort((a, b) => b.localeCompare(a));
+        
+        // Ensure today is in the unclosed list if it's not closed, even if there are no sales yet
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (!closedDates.has(todayStr) && !unclosed.includes(todayStr)) {
+          unclosed.unshift(todayStr);
+        }
+        
+        setUnclosedDates(unclosed);
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      toast.error('Error al cargar el historial');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function fetchTodaySales() {
     try {
       setLoading(true);
       
-      // Get today's date at midnight for filtering
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const startOfDay = new Date(selectedDate + 'T00:00:00').toISOString();
+      const endOfDay = new Date(selectedDate + 'T23:59:59.999').toISOString();
       
+      // Check if selected date is already closed
+      const { data: cierreData } = await supabase
+        .from('cierres_caja')
+        .select('id')
+        .eq('fecha', selectedDate)
+        .maybeSingle();
+        
+      setIsTodayClosed(!!cierreData);
+
       const { data: salesData, error: salesError } = await supabase
         .from('ventas')
         .select('*')
-        .gte('created_at', today.toISOString());
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay);
       
       if (salesError) throw salesError;
       
@@ -139,12 +195,10 @@ export function CashRegister() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
-
       const { error } = await supabase
         .from('cierres_caja')
         .insert([{
-          fecha: today,
+          fecha: selectedDate,
           saldo_apertura: apertura,
           total_ventas: stats.totalVentas,
           total_efectivo: stats.totalEfectivo,
@@ -159,11 +213,20 @@ export function CashRegister() {
       toast.success('Cierre de caja registrado exitosamente');
       setRetiroGanancia('');
       setSaldoApertura('');
+      setIsTodayClosed(true);
       
     } catch (error: any) {
       console.error('Error saving cash register close:', error);
       toast.error(`Error al registrar el cierre: ${error?.message || ''}`);
     }
+  };
+
+  const handlePrint = (cierre: CierreCaja) => {
+    setPrintingCierre(cierre);
+    setTimeout(() => {
+      window.print();
+      setPrintingCierre(null);
+    }, 500);
   };
 
   const renderModal = () => {
@@ -272,139 +335,351 @@ export function CashRegister() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cierre de Caja</h2>
-        <p className="text-slate-500 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
-          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Total Ventas (Hoy)</h3>
-            <DollarSign className="h-4 w-4 text-slate-500" />
-          </div>
-          <div className="p-6 pt-0">
-            <div className="text-2xl font-bold">${stats.totalVentas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-            <div className="flex flex-col gap-1 mt-2">
-              <p className="text-xs text-slate-500">Efectivo: ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-              <p className="text-xs text-slate-500">Transferencias: ${stats.totalTransferencias.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setActiveModal('ventas')}
-            className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
-            title="Ver detalle"
-          >
-            <List className="w-4 h-4" />
-          </button>
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cierre de Caja</h2>
+          <p className="text-slate-500 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
         </div>
-        
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
-          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium">Costo de Mercadería</h3>
-            <Calculator className="h-4 w-4 text-slate-500" />
-          </div>
-          <div className="p-6 pt-0">
-            <div className="text-2xl font-bold text-red-600">-${stats.costoMercaderia.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-          </div>
-          <button 
-            onClick={() => setActiveModal('costos')}
-            className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
-            title="Ver detalle"
+        <div className="flex bg-slate-200 p-1 rounded-lg">
+          <button
+            onClick={() => setViewMode('actual')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'actual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <List className="w-4 h-4" />
+            Caja Actual
           </button>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-emerald-50 text-slate-950 shadow-sm relative overflow-hidden group">
-          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-sm font-medium text-emerald-800">Ganancia Neta</h3>
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
-          </div>
-          <div className="p-6 pt-0">
-            <div className="text-2xl font-bold text-emerald-700">${stats.gananciaNeta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-          </div>
-          <button 
-            onClick={() => setActiveModal('ganancias')}
-            className="absolute top-4 right-10 p-1.5 bg-emerald-100 rounded-md text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-200"
-            title="Ver detalle"
+          <button
+            onClick={() => setViewMode('historial')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+              viewMode === 'historial' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <List className="w-4 h-4" />
+            <History className="w-4 h-4" />
+            Historial
           </button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
-          <div className="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
-            <h3 className="font-semibold leading-none tracking-tight">Estado de Caja (Efectivo)</h3>
-            <p className="text-sm text-slate-500">Control del dinero físico en la caja registradora.</p>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Saldo de Apertura</span>
-              <span className="font-medium">${(parseFloat(saldoApertura) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Ventas en Efectivo</span>
-              <span className="font-medium text-emerald-600">+ ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-600">Retiro de Ganancia</span>
-              <span className="font-medium text-red-600">- ${(parseFloat(retiroGanancia) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="font-semibold text-slate-900">Efectivo Esperado en Caja</span>
-              <span className="text-xl font-bold text-slate-900">
-                ${((parseFloat(saldoApertura) || 0) + stats.totalEfectivo - (parseFloat(retiroGanancia) || 0)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+      {viewMode === 'actual' ? (
+        <>
+          <div className="flex items-center gap-4 mb-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <label htmlFor="date-picker" className="text-sm font-medium text-slate-700">
+              Fecha de Caja:
+            </label>
+            <input 
+              id="date-picker"
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50"
+            />
+            {selectedDate !== new Date().toISOString().split('T')[0] && (
+              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
+                Viendo fecha anterior
               </span>
-            </div>
+            )}
           </div>
-        </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
-          <div className="flex flex-col space-y-1.5 p-6">
-            <h3 className="font-semibold leading-none tracking-tight">Registrar Cierre</h3>
-            <p className="text-sm text-slate-500">Ingresa los datos para cerrar el turno.</p>
-          </div>
-          <div className="p-6 pt-0 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="apertura" className="text-sm font-medium leading-none">Saldo de Apertura ($)</label>
-              <input 
-                id="apertura" 
-                type="number" 
-                step="0.01"
-                value={saldoApertura}
-                onChange={(e) => setSaldoApertura(e.target.value)}
-                placeholder="Ej: 5000.00"
-                className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
+          {isTodayClosed && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center gap-3 text-emerald-800 mb-4">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <div>
+                <p className="font-medium">La caja de esta fecha ya fue cerrada.</p>
+                <p className="text-sm text-emerald-600">Puedes ver los detalles en el Historial.</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="retiro" className="text-sm font-medium leading-none">Retiro de Ganancia ($)</label>
-              <input 
-                id="retiro" 
-                type="number" 
-                step="0.01"
-                value={retiroGanancia}
-                onChange={(e) => setRetiroGanancia(e.target.value)}
-                placeholder="0.00"
-                className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
+          )}
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium">Total Ventas (Hoy)</h3>
+                <DollarSign className="h-4 w-4 text-slate-500" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold">${stats.totalVentas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                <div className="flex flex-col gap-1 mt-2">
+                  <p className="text-xs text-slate-500">Efectivo: ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-slate-500">Transferencias: ${stats.totalTransferencias.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveModal('ventas')}
+                className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+                title="Ver detalle"
+              >
+                <List className="w-4 h-4" />
+              </button>
             </div>
-            <button 
-              onClick={handleCierreCaja}
-              disabled={loading || stats.totalVentas === 0}
-              className="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-emerald-600 text-white hover:bg-emerald-700 h-10 py-2 px-4 mt-4"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Guardar Cierre de Caja
-            </button>
+            
+            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium">Costo de Mercadería</h3>
+                <Calculator className="h-4 w-4 text-slate-500" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold text-red-600">-${stats.costoMercaderia.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+              </div>
+              <button 
+                onClick={() => setActiveModal('costos')}
+                className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+                title="Ver detalle"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-emerald-50 text-slate-950 shadow-sm relative overflow-hidden group">
+              <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                <h3 className="tracking-tight text-sm font-medium text-emerald-800">Ganancia Neta</h3>
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="p-6 pt-0">
+                <div className="text-2xl font-bold text-emerald-700">${stats.gananciaNeta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+              </div>
+              <button 
+                onClick={() => setActiveModal('ganancias')}
+                className="absolute top-4 right-10 p-1.5 bg-emerald-100 rounded-md text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-200"
+                title="Ver detalle"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+              <div className="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+                <h3 className="font-semibold leading-none tracking-tight">Estado de Caja (Efectivo)</h3>
+                <p className="text-sm text-slate-500">Control del dinero físico en la caja registradora.</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-600">Saldo de Apertura</span>
+                  <span className="font-medium">${(parseFloat(saldoApertura) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-600">Ventas en Efectivo</span>
+                  <span className="font-medium text-emerald-600">+ ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-600">Retiro de Ganancia</span>
+                  <span className="font-medium text-red-600">- ${(parseFloat(retiroGanancia) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="font-semibold text-slate-900">Efectivo Esperado en Caja</span>
+                  <span className="text-xl font-bold text-slate-900">
+                    ${((parseFloat(saldoApertura) || 0) + stats.totalEfectivo - (parseFloat(retiroGanancia) || 0)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+              <div className="flex flex-col space-y-1.5 p-6">
+                <h3 className="font-semibold leading-none tracking-tight">Registrar Cierre</h3>
+                <p className="text-sm text-slate-500">Ingresa los datos para cerrar el turno.</p>
+              </div>
+              <div className="p-6 pt-0 space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="apertura" className="text-sm font-medium leading-none">Saldo de Apertura ($)</label>
+                  <input 
+                    id="apertura" 
+                    type="number" 
+                    step="0.01"
+                    value={saldoApertura}
+                    onChange={(e) => setSaldoApertura(e.target.value)}
+                    placeholder="Ej: 5000.00"
+                    disabled={isTodayClosed}
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="retiro" className="text-sm font-medium leading-none">Retiro de Ganancia ($)</label>
+                  <input 
+                    id="retiro" 
+                    type="number" 
+                    step="0.01"
+                    value={retiroGanancia}
+                    onChange={(e) => setRetiroGanancia(e.target.value)}
+                    placeholder="0.00"
+                    disabled={isTodayClosed}
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                  />
+                </div>
+                <button 
+                  onClick={handleCierreCaja}
+                  disabled={loading || stats.totalVentas === 0 || isTodayClosed}
+                  className="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-emerald-600 text-white hover:bg-emerald-700 h-10 py-2 px-4 mt-4"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isTodayClosed ? 'Caja Cerrada' : 'Guardar Cierre de Caja'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 font-medium">Fecha</th>
+                <th className="px-6 py-4 font-medium">Estado</th>
+                <th className="px-6 py-4 font-medium text-right">Ventas Totales</th>
+                <th className="px-6 py-4 font-medium text-right">Efectivo</th>
+                <th className="px-6 py-4 font-medium text-right">Transferencias</th>
+                <th className="px-6 py-4 font-medium text-right">Ganancia Neta</th>
+                <th className="px-6 py-4 font-medium text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {/* Show unclosed dates */}
+              {unclosedDates.map((dateStr) => {
+                const dateObj = new Date(dateStr + 'T12:00:00');
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                return (
+                  <tr key={`unclosed-${dateStr}`} className="bg-blue-50/50">
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      {dateObj.toLocaleDateString('es-AR')} {isToday ? '(Hoy)' : ''}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <Clock className="w-3 h-3" />
+                        Abierta
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right text-slate-500">-</td>
+                    <td className="px-6 py-4 text-right text-slate-500">-</td>
+                    <td className="px-6 py-4 text-right text-slate-500">-</td>
+                    <td className="px-6 py-4 text-right text-slate-500">-</td>
+                    <td className="px-6 py-4 text-center">
+                      <button 
+                        onClick={() => {
+                          setSelectedDate(dateStr);
+                          setViewMode('actual');
+                        }}
+                        className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+                      >
+                        Ir a cerrar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              
+              {history.map((cierre) => {
+                const dateObj = new Date(cierre.fecha + 'T12:00:00'); // Prevent timezone shift
+                return (
+                  <tr key={cierre.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      {dateObj.toLocaleDateString('es-AR')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Cerrada
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium">
+                      ${cierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </td>
+                    <td className="px-6 py-4 text-right text-slate-600">
+                      ${cierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </td>
+                    <td className="px-6 py-4 text-right text-slate-600">
+                      ${cierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-emerald-600">
+                      ${cierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button 
+                        onClick={() => handlePrint(cierre)}
+                        className="inline-flex items-center justify-center p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                        title="Imprimir comprobante"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              
+              {history.length === 0 && unclosedDates.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                    No hay historial de cajas registradas.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
       
       {renderModal()}
+
+      {/* Print Template (Hidden from screen, visible only on print) */}
+      {printingCierre && (
+        <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 text-black">
+          <div className="max-w-md mx-auto border border-black p-6">
+            <div className="text-center mb-6 border-b border-black pb-4">
+              <h1 className="text-2xl font-bold uppercase tracking-widest">Los Abuelos</h1>
+              <p className="text-sm uppercase mt-1">Ramos Generales</p>
+              <h2 className="text-xl font-bold mt-4">Cierre de Caja</h2>
+              <p className="text-sm mt-1">
+                Fecha: {new Date(printingCierre.fecha + 'T12:00:00').toLocaleDateString('es-AR')}
+              </p>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <span>Saldo de Apertura:</span>
+                <span>${printingCierre.saldo_apertura.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <span>Ventas en Efectivo:</span>
+                <span>${printingCierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <span>Ventas por Transferencia:</span>
+                <span>${printingCierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                <span>TOTAL VENTAS:</span>
+                <span>${printingCierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              
+              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                <span>Costo de Mercadería:</span>
+                <span>${printingCierre.costo_mercaderia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                <span>GANANCIA NETA:</span>
+                <span>${printingCierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+
+              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                <span>Retiro de Ganancia:</span>
+                <span>${printingCierre.retiro_ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-b-2 border-black pb-1 mt-2">
+                <span>EFECTIVO EN CAJA:</span>
+                <span>
+                  ${(printingCierre.saldo_apertura + printingCierre.total_efectivo - printingCierre.retiro_ganancia).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-center mt-8 text-xs text-gray-500">
+              <p>Documento interno de control</p>
+              <p>Generado el {new Date().toLocaleString('es-AR')}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
