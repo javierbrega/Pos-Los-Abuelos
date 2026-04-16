@@ -19,11 +19,11 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f4f1ea] text-slate-900 overflow-hidden print:h-auto print:overflow-visible print:block">
+    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden print:h-auto print:overflow-visible print:block">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#4a3623] text-[#f4f1ea] flex flex-col h-full shadow-xl z-10 print:hidden">
-        <div className="p-6 flex flex-col items-center border-b border-[#3a2a1b] shrink-0">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-[#fdfbf7] flex items-center justify-center mb-3 shadow-lg ring-4 ring-[#3a2a1b]">
+      <aside className="w-64 bg-zinc-900 text-zinc-300 flex flex-col h-full border-r border-zinc-800 z-10 print:hidden">
+        <div className="p-6 flex flex-col items-center border-b border-zinc-800 shrink-0">
+          <div className="w-32 h-32 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center mb-3 ring-2 ring-zinc-700">
             <img 
               src="/logo.jpeg" 
               alt="Los Abuelos Logo" 
@@ -34,8 +34,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
               }}
             />
           </div>
-          <h1 className="text-xl font-bold text-white text-center tracking-tight">Los Abuelos</h1>
-          <p className="text-xs text-[#a3c054] mt-1 uppercase tracking-wider font-semibold">Ramos Generales</p>
+          <h1 className="text-xl font-bold text-zinc-100 text-center tracking-tight">Los Abuelos</h1>
+          <p className="text-xs text-emerald-500 mt-1 uppercase tracking-wider font-semibold">Ramos Generales</p>
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -48,8 +48,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive 
-                    ? 'bg-[#6b8e23] text-white shadow-md' 
-                    : 'text-[#d4cbbd] hover:bg-[#5c432b] hover:text-white'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm' 
+                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -59,8 +59,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#3a2a1b] shrink-0">
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[#d4cbbd] hover:bg-[#5c432b] hover:text-white transition-colors">
+        <div className="p-4 border-t border-zinc-800 shrink-0">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 transition-colors">
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Cerrar Sesión</span>
           </button>
@@ -68,7 +68,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-[#f4f1ea] print:overflow-visible print:bg-white print:p-0">
+      <main className="flex-1 overflow-y-auto bg-zinc-950 print:overflow-visible print:bg-zinc-900 print:p-0">
         <div className="p-8 max-w-7xl mx-auto print:p-0 print:max-w-none print:m-0">
           {children}
         </div>

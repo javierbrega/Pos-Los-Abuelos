@@ -60,54 +60,54 @@ export function Shortages() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Faltantes</h2>
-          <p className="text-slate-500 mt-2">Productos sin stock, organizados por proveedor para facilitar pedidos.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">Faltantes</h2>
+          <p className="text-zinc-400 mt-2">Productos sin stock, organizados por proveedor para facilitar pedidos.</p>
         </div>
         <button 
           onClick={fetchShortages}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-slate-300 bg-transparent hover:bg-slate-100 h-10 py-2 px-4 text-slate-900"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-zinc-700 bg-transparent hover:bg-zinc-800 h-10 py-2 px-4 text-zinc-100"
         >
           Actualizar
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500">Cargando faltantes...</div>
+        <div className="text-center py-12 text-zinc-400">Cargando faltantes...</div>
       ) : shortages.length === 0 ? (
-        <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+        <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-12 text-center">
           <PackageSearch className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-          <h3 className="text-lg font-medium text-slate-900">¡Todo en orden!</h3>
-          <p className="text-slate-500 mt-1">No hay productos con stock agotado en este momento.</p>
+          <h3 className="text-lg font-medium text-zinc-100">¡Todo en orden!</h3>
+          <p className="text-zinc-400 mt-1">No hay productos con stock agotado en este momento.</p>
         </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(groupedShortages).map(([supplierName, items]) => (
-            <div key={supplierName} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+            <div key={supplierName} className="bg-zinc-900 rounded-lg shadow-sm border border-zinc-800 overflow-hidden">
+              <div className="bg-zinc-950 px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
+                <h3 className="font-semibold text-zinc-100 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   {supplierName}
                 </h3>
                 {items[0]?.proveedores?.telefono && (
-                  <span className="text-sm text-slate-500">Tel: {items[0].proveedores.telefono}</span>
+                  <span className="text-sm text-zinc-400">Tel: {items[0].proveedores.telefono}</span>
                 )}
               </div>
               <div className="w-full overflow-auto">
                 <table className="w-full caption-bottom text-sm">
-                  <thead className="[&_tr]:border-b">
-                    <tr className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
-                      <th className="h-10 px-4 text-left align-middle font-medium text-slate-500">SKU</th>
-                      <th className="h-10 px-4 text-left align-middle font-medium text-slate-500">Producto</th>
-                      <th className="h-10 px-4 text-right align-middle font-medium text-slate-500">Stock Actual</th>
+                  <thead className="[&_tr]:border-b border-zinc-800">
+                    <tr className="border-b border-zinc-800 transition-colors hover:bg-zinc-800/50 data-[state=selected]:bg-zinc-800">
+                      <th className="h-10 px-4 text-left align-middle font-medium text-zinc-400">SKU</th>
+                      <th className="h-10 px-4 text-left align-middle font-medium text-zinc-400">Producto</th>
+                      <th className="h-10 px-4 text-right align-middle font-medium text-zinc-400">Stock Actual</th>
                     </tr>
                   </thead>
                   <tbody className="[&_tr:last-child]:border-0">
                     {items.map((item) => (
-                      <tr key={item.id} className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
-                        <td className="p-4 align-middle text-slate-500 font-mono text-xs">{item.sku}</td>
-                        <td className="p-4 align-middle font-medium text-slate-900">{item.nombre}</td>
+                      <tr key={item.id} className="border-b border-zinc-800 transition-colors hover:bg-zinc-800/50 data-[state=selected]:bg-zinc-800">
+                        <td className="p-4 align-middle text-zinc-400 font-mono text-xs">{item.sku}</td>
+                        <td className="p-4 align-middle font-medium text-zinc-100">{item.nombre}</td>
                         <td className="p-4 align-middle text-right">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
                             {item.stock_actual}
                           </span>
                         </td>

@@ -248,15 +248,15 @@ export function CashRegister() {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div className="bg-zinc-900 rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
+          <div className="p-6 border-b border-zinc-800 flex justify-between items-center">
             <div>
-              <h3 className="font-bold text-xl text-slate-900">{title}</h3>
-              <p className="text-sm text-slate-500">Respaldo detallado del día</p>
+              <h3 className="font-bold text-xl text-zinc-100">{title}</h3>
+              <p className="text-sm text-zinc-400">Respaldo detallado del día</p>
             </div>
             <button 
               onClick={() => setActiveModal(null)}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-zinc-500 hover:text-zinc-400 transition-colors"
             >
               ✕
             </button>
@@ -264,7 +264,7 @@ export function CashRegister() {
           
           <div className="p-6 overflow-y-auto flex-1">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+              <thead className="text-xs text-zinc-400 uppercase bg-zinc-950">
                 <tr>
                   {columns.map((col, i) => (
                     <th key={i} className={`px-4 py-3 font-medium ${i > 0 ? 'text-right' : ''}`}>{col}</th>
@@ -273,8 +273,8 @@ export function CashRegister() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {detailedItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{item.nombre}</td>
+                  <tr key={item.id} className="hover:bg-zinc-950/50">
+                    <td className="px-4 py-3 font-medium text-zinc-100">{item.nombre}</td>
                     {activeModal === 'ventas' && (
                       <>
                         <td className="px-4 py-3 text-right">{item.cantidad.toLocaleString('es-AR', {maximumFractionDigits: 2})}</td>
@@ -300,15 +300,15 @@ export function CashRegister() {
                 ))}
                 {detailedItems.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No hay datos para mostrar</td>
+                    <td colSpan={4} className="px-4 py-8 text-center text-zinc-400">No hay datos para mostrar</td>
                   </tr>
                 )}
               </tbody>
-              <tfoot className="bg-slate-50 font-bold">
+              <tfoot className="bg-zinc-950 font-bold">
                 <tr>
-                  <td className="px-4 py-3 text-slate-900">TOTAL</td>
+                  <td className="px-4 py-3 text-zinc-100">TOTAL</td>
                   <td colSpan={2}></td>
-                  <td className={`px-4 py-3 text-right ${activeModal === 'costos' ? 'text-red-600' : activeModal === 'ganancias' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                  <td className={`px-4 py-3 text-right ${activeModal === 'costos' ? 'text-red-600' : activeModal === 'ganancias' ? 'text-emerald-600' : 'text-zinc-100'}`}>
                     ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                   </td>
                 </tr>
@@ -316,7 +316,7 @@ export function CashRegister() {
             </table>
           </div>
           
-          <div className="p-4 border-t border-slate-100 flex justify-end">
+          <div className="p-4 border-t border-zinc-800 flex justify-end">
             <button 
               onClick={() => setActiveModal(null)}
               className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition-colors"
@@ -334,14 +334,14 @@ export function CashRegister() {
       <div className={`space-y-6 pb-12 ${previewCierre ? 'print:hidden' : ''}`}>
         <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cierre de Caja</h2>
-          <p className="text-slate-500 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">Cierre de Caja</h2>
+          <p className="text-zinc-400 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
         </div>
-        <div className="flex bg-slate-200 p-1 rounded-lg">
+        <div className="flex bg-zinc-700 p-1 rounded-lg">
           <button
             onClick={() => setViewMode('actual')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'actual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              viewMode === 'actual' ? 'bg-zinc-900 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-100'
             }`}
           >
             Caja Actual
@@ -349,7 +349,7 @@ export function CashRegister() {
           <button
             onClick={() => setViewMode('historial')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-              viewMode === 'historial' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              viewMode === 'historial' ? 'bg-zinc-900 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-100'
             }`}
           >
             <History className="w-4 h-4" />
@@ -360,8 +360,8 @@ export function CashRegister() {
 
       {viewMode === 'actual' ? (
         <>
-          <div className="flex items-center gap-4 mb-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <label htmlFor="date-picker" className="text-sm font-medium text-slate-700">
+          <div className="flex items-center gap-4 mb-2 bg-zinc-900 p-4 rounded-lg border border-zinc-800 shadow-sm">
+            <label htmlFor="date-picker" className="text-sm font-medium text-zinc-300">
               Fecha de Caja:
             </label>
             <input 
@@ -369,7 +369,7 @@ export function CashRegister() {
               type="date" 
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50"
+              className="border border-zinc-700 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-zinc-950"
             />
             {selectedDate !== new Date().toISOString().split('T')[0] && (
               <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-200">
@@ -389,55 +389,55 @@ export function CashRegister() {
           )}
 
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm relative overflow-hidden group">
               <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                 <h3 className="tracking-tight text-sm font-medium">Total Ventas (Hoy)</h3>
-                <DollarSign className="h-4 w-4 text-slate-500" />
+                <DollarSign className="h-4 w-4 text-zinc-400" />
               </div>
               <div className="p-6 pt-0">
                 <div className="text-2xl font-bold">${stats.totalVentas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
                 <div className="flex flex-col gap-1 mt-2">
-                  <p className="text-xs text-slate-500">Efectivo: ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-slate-500">Transferencias: ${stats.totalTransferencias.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-zinc-400">Efectivo: ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-zinc-400">Transferencias: ${stats.totalTransferencias.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setActiveModal('ventas')}
-                className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+                className="absolute top-4 right-10 p-1.5 bg-zinc-800 rounded-md text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-700"
                 title="Ver detalle"
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
             
-            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm relative overflow-hidden group">
               <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                 <h3 className="tracking-tight text-sm font-medium">Costo de Mercadería</h3>
-                <Calculator className="h-4 w-4 text-slate-500" />
+                <Calculator className="h-4 w-4 text-zinc-400" />
               </div>
               <div className="p-6 pt-0">
                 <div className="text-2xl font-bold text-red-600">-${stats.costoMercaderia.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
               </div>
               <button 
                 onClick={() => setActiveModal('costos')}
-                className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+                className="absolute top-4 right-10 p-1.5 bg-zinc-800 rounded-md text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-700"
                 title="Ver detalle"
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-emerald-50 text-slate-950 shadow-sm relative overflow-hidden group">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shadow-sm relative overflow-hidden group">
               <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="tracking-tight text-sm font-medium text-emerald-800">Ganancia Neta</h3>
+                <h3 className="tracking-tight text-sm font-medium text-emerald-400">Ganancia Neta</h3>
                 <TrendingUp className="h-4 w-4 text-emerald-600" />
               </div>
               <div className="p-6 pt-0">
-                <div className="text-2xl font-bold text-emerald-700">${stats.gananciaNeta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+                <div className="text-2xl font-bold text-emerald-400">${stats.gananciaNeta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
               </div>
               <button 
                 onClick={() => setActiveModal('ganancias')}
-                className="absolute top-4 right-10 p-1.5 bg-emerald-100 rounded-md text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-200"
+                className="absolute top-4 right-10 p-1.5 bg-emerald-500/20 rounded-md text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500/30"
                 title="Ver detalle"
               >
                 <List className="w-4 h-4" />
@@ -446,37 +446,37 @@ export function CashRegister() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
-              <div className="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm">
+              <div className="flex flex-col space-y-1.5 p-6 border-b border-zinc-800">
                 <h3 className="font-semibold leading-none tracking-tight">Estado de Caja (Efectivo)</h3>
-                <p className="text-sm text-slate-500">Control del dinero físico en la caja registradora.</p>
+                <p className="text-sm text-zinc-400">Control del dinero físico en la caja registradora.</p>
               </div>
               <div className="p-6 space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-600">Saldo de Apertura</span>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                  <span className="text-sm text-zinc-400">Saldo de Apertura</span>
                   <span className="font-medium">${(parseFloat(saldoApertura) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-600">Ventas en Efectivo</span>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                  <span className="text-sm text-zinc-400">Ventas en Efectivo</span>
                   <span className="font-medium text-emerald-600">+ ${stats.totalEfectivo.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-600">Retiro de Ganancia</span>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                  <span className="text-sm text-zinc-400">Retiro de Ganancia</span>
                   <span className="font-medium text-red-600">- ${(parseFloat(retiroGanancia) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2">
-                  <span className="font-semibold text-slate-900">Efectivo Esperado en Caja</span>
-                  <span className="text-xl font-bold text-slate-900">
+                  <span className="font-semibold text-zinc-100">Efectivo Esperado en Caja</span>
+                  <span className="text-xl font-bold text-zinc-100">
                     ${((parseFloat(saldoApertura) || 0) + stats.totalEfectivo - (parseFloat(retiroGanancia) || 0)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm">
               <div className="flex flex-col space-y-1.5 p-6">
                 <h3 className="font-semibold leading-none tracking-tight">Registrar Cierre</h3>
-                <p className="text-sm text-slate-500">Ingresa los datos para cerrar el turno.</p>
+                <p className="text-sm text-zinc-400">Ingresa los datos para cerrar el turno.</p>
               </div>
               <div className="p-6 pt-0 space-y-4">
                 <div className="space-y-2">
@@ -489,7 +489,7 @@ export function CashRegister() {
                     onChange={(e) => setSaldoApertura(e.target.value)}
                     placeholder="Ej: 5000.00"
                     disabled={isTodayClosed}
-                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -502,7 +502,7 @@ export function CashRegister() {
                     onChange={(e) => setRetiroGanancia(e.target.value)}
                     placeholder="0.00"
                     disabled={isTodayClosed}
-                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
                   />
                 </div>
                 <button 
@@ -518,9 +518,9 @@ export function CashRegister() {
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-zinc-900 rounded-lg shadow-sm border border-zinc-800 overflow-hidden">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+            <thead className="text-xs text-zinc-400 uppercase bg-zinc-950 border-b border-zinc-800">
               <tr>
                 <th className="px-6 py-4 font-medium">Fecha</th>
                 <th className="px-6 py-4 font-medium">Estado</th>
@@ -538,19 +538,19 @@ export function CashRegister() {
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
                 return (
                   <tr key={`unclosed-${dateStr}`} className="bg-blue-50/50">
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                    <td className="px-6 py-4 font-medium text-zinc-100">
                       {dateObj.toLocaleDateString('es-AR')} {isToday ? '(Hoy)' : ''}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-b border-zinc-800lue-500/20">
                         <Clock className="w-3 h-3" />
                         Abierta
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-500">-</td>
-                    <td className="px-6 py-4 text-right text-slate-500">-</td>
-                    <td className="px-6 py-4 text-right text-slate-500">-</td>
-                    <td className="px-6 py-4 text-right text-slate-500">-</td>
+                    <td className="px-6 py-4 text-right text-zinc-400">-</td>
+                    <td className="px-6 py-4 text-right text-zinc-400">-</td>
+                    <td className="px-6 py-4 text-right text-zinc-400">-</td>
+                    <td className="px-6 py-4 text-right text-zinc-400">-</td>
                     <td className="px-6 py-4 text-center">
                       <button 
                         onClick={() => {
@@ -569,12 +569,12 @@ export function CashRegister() {
               {history.map((cierre) => {
                 const dateObj = new Date(cierre.fecha + 'T12:00:00'); // Prevent timezone shift
                 return (
-                  <tr key={cierre.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                  <tr key={cierre.id} className="hover:bg-zinc-950 transition-colors">
+                    <td className="px-6 py-4 font-medium text-zinc-100">
                       {dateObj.toLocaleDateString('es-AR')}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <CheckCircle2 className="w-3 h-3" />
                         Cerrada
                       </span>
@@ -582,10 +582,10 @@ export function CashRegister() {
                     <td className="px-6 py-4 text-right font-medium">
                       ${cierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-600">
+                    <td className="px-6 py-4 text-right text-zinc-400">
                       ${cierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-600">
+                    <td className="px-6 py-4 text-right text-zinc-400">
                       ${cierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </td>
                     <td className="px-6 py-4 text-right font-medium text-emerald-600">
@@ -594,7 +594,7 @@ export function CashRegister() {
                     <td className="px-6 py-4 text-center">
                       <button 
                         onClick={() => handlePrint(cierre)}
-                        className="inline-flex items-center justify-center p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+                        className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
                         title="Imprimir comprobante"
                       >
                         <Printer className="w-4 h-4" />
@@ -606,7 +606,7 @@ export function CashRegister() {
               
               {history.length === 0 && unclosedDates.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-zinc-400">
                     No hay historial de cajas registradas.
                   </td>
                 </tr>
@@ -621,11 +621,11 @@ export function CashRegister() {
 
     {/* Print Preview Modal */}
     {previewCierre && (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 print:static print:inset-auto print:bg-white print:p-0 print:block">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:max-w-none">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 print:static print:inset-auto print:bg-zinc-900 print:p-0 print:block">
+        <div className="bg-zinc-900 rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:max-w-none">
           {/* Header - hidden when printing */}
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center print:hidden">
-            <h3 className="font-bold text-lg text-slate-900">Vista Previa</h3>
+          <div className="p-4 border-b border-zinc-800 flex justify-between items-center print:hidden">
+            <h3 className="font-bold text-lg text-zinc-100">Vista Previa</h3>
             <div className="flex gap-2">
               <button 
                 onClick={() => {
@@ -641,7 +641,7 @@ export function CashRegister() {
               </button>
               <button 
                 onClick={() => setPreviewCierre(null)} 
-                className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-2 text-zinc-500 hover:text-zinc-400 transition-colors"
               >
                 ✕
               </button>
@@ -649,8 +649,8 @@ export function CashRegister() {
           </div>
 
           {window !== window.parent && (
-            <div className="bg-amber-50 text-amber-800 p-4 text-sm border-b border-amber-200 print:hidden flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+            <div className="bg-amber-500/10 text-amber-500 p-4 text-sm border-b border-zinc-800 border-amber-500/20 print:hidden flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-500" />
               <p>
                 El navegador bloquea la impresión dentro de esta vista previa. Para poder imprimir, <strong>abre la aplicación en una nueva pestaña</strong> haciendo clic en el ícono <strong>↗️ (Open in new tab)</strong> en la esquina superior derecha de tu pantalla.
               </p>
@@ -659,8 +659,8 @@ export function CashRegister() {
 
           {/* Receipt Content */}
           <div className="p-8 overflow-y-auto print:overflow-visible print:p-0 text-black bg-white">
-            <div className="max-w-md mx-auto border border-black p-6 print:border-none print:p-0">
-              <div className="text-center mb-6 border-b border-black pb-4">
+            <div className="max-w-md mx-auto border border-b border-zinc-800lack p-6 print:border-none print:p-0">
+              <div className="text-center mb-6 border-b border-zinc-800 border-b border-zinc-800lack pb-4">
                 <h1 className="text-2xl font-bold uppercase tracking-widest">Los Abuelos</h1>
                 <p className="text-sm uppercase mt-1">Ramos Generales</p>
                 <h2 className="text-xl font-bold mt-4">Cierre de Caja</h2>
@@ -670,37 +670,37 @@ export function CashRegister() {
               </div>
 
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <div className="flex justify-between border-b border-zinc-800 border-gray-300 border-dashed pb-1">
                   <span>Saldo de Apertura:</span>
                   <span>${previewCierre.saldo_apertura.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <div className="flex justify-between border-b border-zinc-800 border-gray-300 border-dashed pb-1">
                   <span>Ventas en Efectivo:</span>
                   <span>${previewCierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                <div className="flex justify-between border-b border-zinc-800 border-gray-300 border-dashed pb-1">
                   <span>Ventas por Transferencia:</span>
                   <span>${previewCierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                <div className="flex justify-between font-bold border-b border-zinc-800 border-b border-zinc-800lack pb-1 mt-2">
                   <span>TOTAL VENTAS:</span>
                   <span>${previewCierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
                 
-                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                <div className="flex justify-between border-b border-zinc-800 border-gray-300 border-dashed pb-1 mt-4">
                   <span>Costo de Mercadería:</span>
                   <span>${previewCierre.costo_mercaderia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                <div className="flex justify-between font-bold border-b border-zinc-800 border-b border-zinc-800lack pb-1 mt-2">
                   <span>GANANCIA NETA:</span>
                   <span>${previewCierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
 
-                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                <div className="flex justify-between border-b border-zinc-800 border-gray-300 border-dashed pb-1 mt-4">
                   <span>Retiro de Ganancia:</span>
                   <span>${previewCierre.retiro_ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg border-b-2 border-black pb-1 mt-2">
+                <div className="flex justify-between font-bold text-lg border-b border-zinc-800-2 border-b border-zinc-800lack pb-1 mt-2">
                   <span>EFECTIVO EN CAJA:</span>
                   <span>
                     ${(previewCierre.saldo_apertura + previewCierre.total_efectivo - previewCierre.retiro_ganancia).toLocaleString('es-AR', {minimumFractionDigits: 2})}

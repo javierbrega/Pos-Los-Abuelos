@@ -312,11 +312,11 @@ export function POSSystem() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Punto de Venta</h2>
-          <p className="text-slate-500 mt-2">Registra nuevas ventas, selecciona el método de pago y descuenta stock.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-100">Punto de Venta</h2>
+          <p className="text-zinc-400 mt-2">Registra nuevas ventas, selecciona el método de pago y descuenta stock.</p>
         </div>
-        <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-          <label htmlFor="sale-date" className="text-sm font-medium text-slate-700 whitespace-nowrap">
+        <div className="flex items-center gap-3 bg-zinc-900 p-3 rounded-lg border border-zinc-800 shadow-sm">
+          <label htmlFor="sale-date" className="text-sm font-medium text-zinc-300 whitespace-nowrap">
             Fecha de Venta:
           </label>
           <input 
@@ -325,7 +325,7 @@ export function POSSystem() {
             value={saleDate}
             max={new Date().toISOString().split('T')[0]}
             onChange={(e) => setSaleDate(e.target.value)}
-            className="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50"
+            className="border border-zinc-700 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-zinc-950"
           />
           {saleDate !== new Date().toISOString().split('T')[0] && (
             <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded border border-amber-200 whitespace-nowrap">
@@ -338,50 +338,50 @@ export function POSSystem() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Search and Results */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm">
             <div className="flex flex-col space-y-1.5 p-6 pb-3">
-              <h3 className="font-semibold leading-none tracking-tight text-lg text-slate-800">Buscar Productos</h3>
+              <h3 className="font-semibold leading-none tracking-tight text-lg text-zinc-200">Buscar Productos</h3>
             </div>
             <div className="p-6 pt-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
                 <input 
                   placeholder="Escribe el nombre o SKU del producto..." 
-                  className="flex w-full rounded-md border border-slate-300 bg-transparent px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent pl-10 h-14 text-lg"
+                  className="flex w-full rounded-md border border-zinc-700 bg-transparent px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent pl-10 h-14 text-lg"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
               {products.length > 0 && (
-                <div className="mt-4 border border-slate-200 rounded-md overflow-hidden">
+                <div className="mt-4 border border-zinc-800 rounded-md overflow-hidden">
                   <div className="w-full overflow-auto">
                     <table className="w-full caption-bottom text-sm">
-                      <thead className="[&_tr]:border-b bg-slate-50">
-                        <tr className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
-                          <th className="h-12 px-4 text-left align-middle font-medium text-slate-500">Producto</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-slate-500">Proveedor</th>
-                          <th className="h-12 px-4 text-right align-middle font-medium text-slate-500">Precio</th>
-                          <th className="h-12 px-4 text-right align-middle font-medium text-slate-500">Stock</th>
-                          <th className="h-12 px-4 align-middle font-medium text-slate-500"></th>
+                      <thead className="[&_tr]:border-b border-zinc-800 bg-zinc-950">
+                        <tr className="border-b border-zinc-800 transition-colors hover:bg-zinc-800/50 data-[state=selected]:bg-zinc-800">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-zinc-400">Producto</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-zinc-400">Proveedor</th>
+                          <th className="h-12 px-4 text-right align-middle font-medium text-zinc-400">Precio</th>
+                          <th className="h-12 px-4 text-right align-middle font-medium text-zinc-400">Stock</th>
+                          <th className="h-12 px-4 align-middle font-medium text-zinc-400"></th>
                         </tr>
                       </thead>
                       <tbody className="[&_tr:last-child]:border-0">
                         {products.map(product => (
-                          <tr key={product.id} className="border-b transition-colors hover:bg-slate-100/50 data-[state=selected]:bg-slate-100">
+                          <tr key={product.id} className="border-b border-zinc-800 transition-colors hover:bg-zinc-800/50 data-[state=selected]:bg-zinc-800">
                             <td className="p-4 align-middle">
-                              <div className="font-medium text-slate-900">{product.nombre}</div>
-                              <div className="text-xs text-slate-500">SKU: {product.sku}</div>
+                              <div className="font-medium text-zinc-100">{product.nombre}</div>
+                              <div className="text-xs text-zinc-400">SKU: {product.sku}</div>
                             </td>
                             <td className="p-4 align-middle">
-                              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">{getSupplierName(product)}</span>
+                              <span className="text-xs text-zinc-400 bg-zinc-800 px-2 py-1 rounded">{getSupplierName(product)}</span>
                             </td>
                             <td className="p-4 align-middle text-right font-medium">
                               ${product.precio_venta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                             </td>
                             <td className="p-4 align-middle text-right">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                product.stock_actual > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                product.stock_actual > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
                               }`}>
                                 {product.stock_actual}
                               </span>
@@ -419,16 +419,16 @@ export function POSSystem() {
 
         {/* Right Column: Cart and Checkout */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full flex flex-col">
-            <div className="flex flex-col space-y-1.5 p-6 pb-3 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-              <h3 className="font-semibold leading-none tracking-tight text-lg text-slate-800 flex items-center gap-2">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm h-full flex flex-col">
+            <div className="flex flex-col space-y-1.5 p-6 pb-3 border-b border-zinc-800 bg-zinc-950 rounded-t-xl">
+              <h3 className="font-semibold leading-none tracking-tight text-lg text-zinc-200 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 Carrito Actual
               </h3>
             </div>
             <div className="p-6 pt-0 flex-1 overflow-y-auto px-0 py-0">
               {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                <div className="flex flex-col items-center justify-center h-48 text-zinc-500">
                   <ShoppingCart className="h-12 w-12 mb-2 opacity-20" />
                   <p>El carrito está vacío</p>
                 </div>
@@ -447,18 +447,18 @@ export function POSSystem() {
                     <div key={item.cartId} className="p-4 flex flex-col gap-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-medium text-slate-900 line-clamp-2">
+                          <h4 className="font-medium text-zinc-100 line-clamp-2">
                             {item.nombre} {isSuelto && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded ml-1">Suelto</span>}
                           </h4>
-                          <p className="text-sm text-slate-500">{priceLabel}</p>
+                          <p className="text-sm text-zinc-400">{priceLabel}</p>
                         </div>
-                        <button onClick={() => removeFromCart(item.cartId)} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-slate-100 hover:text-red-600 h-8 w-8 text-slate-400 -mr-2 -mt-1">
+                        <button onClick={() => removeFromCart(item.cartId)} className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-zinc-800 hover:text-red-600 h-8 w-8 text-zinc-500 -mr-2 -mt-1">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center border border-slate-200 rounded-md">
-                          <button onClick={() => updateQuantity(item.cartId, -1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 rounded-none">
+                        <div className="flex items-center border border-zinc-800 rounded-md">
+                          <button onClick={() => updateQuantity(item.cartId, -1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-zinc-800 hover:text-zinc-100 h-8 w-8 rounded-none">
                             <Minus className="h-3 w-3" />
                           </button>
                           <input 
@@ -484,14 +484,14 @@ export function POSSystem() {
                                 return i;
                               }))
                             }}
-                            className="w-16 text-center text-sm font-medium bg-transparent border border-slate-200 rounded-md focus:ring-2 focus:ring-emerald-500 p-1 h-8 mx-1"
+                            className="w-16 text-center text-sm font-medium bg-transparent border border-zinc-800 rounded-md focus:ring-2 focus:ring-emerald-500 p-1 h-8 mx-1"
                           />
-                          <span className="text-xs text-slate-500 mr-2 font-medium">{unitLabel}</span>
-                          <button onClick={() => updateQuantity(item.cartId, 1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-slate-100 hover:text-slate-900 h-8 w-8 rounded-none">
+                          <span className="text-xs text-zinc-400 mr-2 font-medium">{unitLabel}</span>
+                          <button onClick={() => updateQuantity(item.cartId, 1)} className="inline-flex items-center justify-center text-sm font-medium transition-colors hover:bg-zinc-800 hover:text-zinc-100 h-8 w-8 rounded-none">
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
-                        <div className="font-bold text-slate-900">
+                        <div className="font-bold text-zinc-100">
                           ${getSubtotal(item).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
@@ -500,18 +500,18 @@ export function POSSystem() {
                 </div>
               )}
             </div>
-            <div className="flex items-center p-6 flex-col border-t border-slate-200 bg-slate-50 rounded-b-xl space-y-4">
+            <div className="flex items-center p-6 flex-col border-t border-zinc-800 bg-zinc-950 rounded-b-xl space-y-4">
               
               {/* Payment Method Selector */}
               <div className="w-full space-y-2">
-                <label className="text-sm font-medium text-slate-700">Método de Pago</label>
+                <label className="text-sm font-medium text-zinc-300">Método de Pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setMetodoPago('Efectivo')}
                     className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
                       metodoPago === 'Efectivo' 
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700' 
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-950'
                     }`}
                   >
                     <Banknote className="w-4 h-4" />
@@ -521,8 +521,8 @@ export function POSSystem() {
                     onClick={() => setMetodoPago('Transferencia')}
                     className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md border text-sm font-medium transition-colors ${
                       metodoPago === 'Transferencia' 
-                        ? 'bg-blue-50 border-blue-500 text-blue-700' 
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        ? 'bg-blue-50 border-b border-zinc-800lue-500 text-blue-700' 
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-950'
                     }`}
                   >
                     <CreditCard className="w-4 h-4" />
@@ -531,9 +531,9 @@ export function POSSystem() {
                 </div>
               </div>
 
-              <div className="flex justify-between w-full pt-2 border-t border-slate-200">
-                <span className="text-slate-600 font-medium">Total a Pagar</span>
-                <span className="text-2xl font-bold text-slate-900">
+              <div className="flex justify-between w-full pt-2 border-t border-zinc-800">
+                <span className="text-zinc-400 font-medium">Total a Pagar</span>
+                <span className="text-2xl font-bold text-zinc-100">
                   ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -556,17 +556,17 @@ export function POSSystem() {
         
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-bold text-lg mb-1 text-slate-900">Vender Suelto</h3>
-            <p className="text-sm text-slate-600 mb-4">{product?.nombre}</p>
+          <div className="bg-zinc-900 rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-bold text-lg mb-1 text-zinc-100">Vender Suelto</h3>
+            <p className="text-sm text-zinc-400 mb-4">{product?.nombre}</p>
             
-            <div className="bg-slate-50 p-3 rounded-md mb-4 border border-slate-100">
+            <div className="bg-zinc-950 p-3 rounded-md mb-4 border border-zinc-800">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-slate-500">Precio por bolsa:</span>
+                <span className="text-zinc-400">Precio por bolsa:</span>
                 <span className="font-medium">${Number(product?.precio_venta).toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Precio por Kg:</span>
+                <span className="text-zinc-400">Precio por Kg:</span>
                 <span className="font-bold text-emerald-600">
                   ${precioSuelto.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                 </span>
@@ -574,12 +574,12 @@ export function POSSystem() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-slate-700">Cantidad a vender (Kg)</label>
+              <label className="block text-sm font-medium mb-2 text-zinc-300">Cantidad a vender (Kg)</label>
               <div className="relative">
                 <input 
                   type="number" 
                   step="0.01"
-                  className="w-full border border-slate-300 rounded-md p-3 pr-12 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  className="w-full border border-zinc-700 rounded-md p-3 pr-12 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   placeholder="Ej: 1.5"
                   value={sueltoModal.kg}
                   onChange={e => setSueltoModal({...sueltoModal, kg: e.target.value})}
@@ -588,14 +588,14 @@ export function POSSystem() {
                     if (e.key === 'Enter') confirmSuelto();
                   }}
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">Kg</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">Kg</span>
               </div>
             </div>
 
             <div className="flex justify-end gap-3">
               <button 
                 onClick={() => setSueltoModal({isOpen: false, product: null, kg: ''})} 
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 rounded-md transition-colors"
               >
                 Cancelar
               </button>

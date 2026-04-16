@@ -180,60 +180,60 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h2>
-        <p className="text-slate-500 mt-2">Resumen de la actividad y liquidaciones pendientes.</p>
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-100">Dashboard</h2>
+        <p className="text-zinc-400 mt-2">Resumen de la actividad y liquidaciones pendientes.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Ventas de Hoy</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Ventas de Hoy</CardTitle>
             <DollarSign className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl font-bold text-zinc-100">
               ${todaySales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-zinc-400 mt-1">
               Ingresos brutos del día
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Productos Bajo Stock</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Productos Bajo Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{lowStockCount}</div>
-            <p className="text-xs text-slate-500 mt-1">
+            <div className="text-2xl font-bold text-zinc-100">{lowStockCount}</div>
+            <p className="text-xs text-zinc-400 mt-1">
               Requieren atención inmediata
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Productos</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Total Productos</CardTitle>
             <PackageOpen className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{totalProducts}</div>
-            <p className="text-xs text-slate-500 mt-1">
+            <div className="text-2xl font-bold text-zinc-100">{totalProducts}</div>
+            <p className="text-xs text-zinc-400 mt-1">
               En catálogo activo
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Tasa de Conversión</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Tasa de Conversión</CardTitle>
             <TrendingUp className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">84.2%</div>
-            <p className="text-xs text-slate-500 mt-1">
+            <div className="text-2xl font-bold text-zinc-100">84.2%</div>
+            <p className="text-xs text-zinc-400 mt-1">
               +4.3% este mes
             </p>
           </CardContent>
@@ -241,24 +241,24 @@ export function Dashboard() {
       </div>
 
       {/* Analytics Section */}
-      <h3 className="text-xl font-bold tracking-tight text-slate-900 mt-8 mb-4">Analíticas del Negocio</h3>
+      <h3 className="text-xl font-bold tracking-tight text-zinc-100 mt-8 mb-4">Analíticas del Negocio</h3>
       
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         {/* Ventas 7 días */}
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Ventas (Últimos 7 días)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-slate-400" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Ventas (Últimos 7 días)</CardTitle>
+            <TrendingUp className="h-4 w-4 text-zinc-500" />
           </CardHeader>
           <CardContent>
             <div className="h-[250px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklySales} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
+                  <XAxis dataKey="date" tick={{fontSize: 12, fill: '#a1a1aa'}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fontSize: 12, fill: '#a1a1aa'}} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                    contentStyle={{borderRadius: '8px', border: '1px solid #27272a', backgroundColor: '#18181b', color: '#f4f4f5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)'}}
                     formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Ventas']}
                   />
                   <Line type="monotone" dataKey="total" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
@@ -269,10 +269,10 @@ export function Dashboard() {
         </Card>
 
         {/* Métodos de Pago */}
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Métodos de Pago (Mes Actual)</CardTitle>
-            <PieChartIcon className="h-4 w-4 text-slate-400" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Métodos de Pago (Mes Actual)</CardTitle>
+            <PieChartIcon className="h-4 w-4 text-zinc-500" />
           </CardHeader>
           <CardContent>
             <div className="h-[250px] mt-4">
@@ -293,7 +293,7 @@ export function Dashboard() {
                   </Pie>
                   <Tooltip 
                     formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Monto']}
-                    contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                    contentStyle={{borderRadius: '8px', border: '1px solid #27272a', backgroundColor: '#18181b', color: '#f4f4f5'}}
                   />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
@@ -303,9 +303,9 @@ export function Dashboard() {
         </Card>
 
         {/* Productos Más Vendidos */}
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Productos Más Vendidos (Mes Actual)</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Productos Más Vendidos (Mes Actual)</CardTitle>
             <BarChart3 className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
@@ -313,12 +313,12 @@ export function Dashboard() {
               {topProducts.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topProducts} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#27272a" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#a1a1aa'}} axisLine={false} tickLine={false} />
                     <Tooltip 
-                      cursor={{fill: '#f8fafc'}}
-                      contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                      cursor={{fill: '#27272a'}}
+                      contentStyle={{borderRadius: '8px', border: '1px solid #27272a', backgroundColor: '#18181b', color: '#f4f4f5'}}
                       formatter={(value: number) => [value.toLocaleString('es-AR', {maximumFractionDigits: 2}), 'Cantidad']}
                     />
                     <Bar dataKey="cantidad" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20}>
@@ -329,16 +329,16 @@ export function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm">No hay datos suficientes</div>
+                <div className="h-full flex items-center justify-center text-zinc-500 text-sm">No hay datos suficientes</div>
               )}
             </div>
           </CardContent>
         </Card>
 
         {/* Mayor Recaudación */}
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Mayor Recaudación (Mes Actual)</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Mayor Recaudación (Mes Actual)</CardTitle>
             <DollarSign className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
@@ -346,12 +346,12 @@ export function Dashboard() {
               {topRevenue.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topRevenue} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#27272a" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#a1a1aa'}} axisLine={false} tickLine={false} />
                     <Tooltip 
-                      cursor={{fill: '#f8fafc'}}
-                      contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                      cursor={{fill: '#27272a'}}
+                      contentStyle={{borderRadius: '8px', border: '1px solid #27272a', backgroundColor: '#18181b', color: '#f4f4f5'}}
                       formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Ingresos']}
                     />
                     <Bar dataKey="ingresos" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20}>
@@ -362,7 +362,7 @@ export function Dashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm">No hay datos suficientes</div>
+                <div className="h-full flex items-center justify-center text-zinc-500 text-sm">No hay datos suficientes</div>
               )}
             </div>
           </CardContent>
@@ -370,27 +370,27 @@ export function Dashboard() {
       </div>
 
       {/* Supplier Debt Section */}
-      <h3 className="text-xl font-bold tracking-tight text-slate-900 mt-8 mb-4">Liquidación a Proveedores (Mes Actual)</h3>
+      <h3 className="text-xl font-bold tracking-tight text-zinc-100 mt-8 mb-4">Liquidación a Proveedores (Mes Actual)</h3>
       <div className="grid gap-6 md:grid-cols-2">
         {Object.entries(supplierDebt).length > 0 ? (
           Object.entries(supplierDebt).map(([proveedor, deuda]) => (
-            <Card key={proveedor} className="bg-white border-slate-200 shadow-sm">
+            <Card key={proveedor} className="bg-zinc-900 border-zinc-800 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">{proveedor}</CardTitle>
-                <Truck className="h-4 w-4 text-slate-400" />
+                <CardTitle className="text-sm font-medium text-zinc-400">{proveedor}</CardTitle>
+                <Truck className="h-4 w-4 text-zinc-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
                   ${Number(deuda).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Costo total de mercadería vendida
                 </p>
               </CardContent>
             </Card>
           ))
         ) : (
-          <div className="col-span-2 p-8 text-center text-slate-500 bg-white rounded-lg border border-slate-200 border-dashed">
+          <div className="col-span-2 p-8 text-center text-zinc-400 bg-zinc-900 rounded-lg border border-zinc-800 border-dashed">
             No hay ventas registradas este mes para calcular liquidaciones.
           </div>
         )}
