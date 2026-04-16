@@ -223,7 +223,9 @@ export function POSSystem() {
         const qtyToDeduct = isSuelto ? (Number(item.kg_solicitados) / (Number(item.peso_kg) || 1)) : (Number(item.cantidad) || 0);
         const unitPrice = getUnitPrice(item);
         const subtotal = getSubtotal(item);
-        const unitCost = isSuelto ? (Number(item.precio_costo) / (Number(item.peso_kg) || 1)) : Number(item.precio_costo);
+        const unitCost = isSuelto 
+          ? (Number(item.precio_costo_suelto) || (Number(item.precio_costo) / (Number(item.peso_kg) || 1))) 
+          : Number(item.precio_costo);
 
         // Insert sale item
         const { error: itemError } = await supabase

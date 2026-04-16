@@ -23,7 +23,8 @@ export function Inventory() {
     categoria: '',
     proveedor_id: '',
     peso_kg: '',
-    precio_suelto: ''
+    precio_suelto: '',
+    precio_costo_suelto: ''
   });
 
   useEffect(() => {
@@ -87,7 +88,8 @@ export function Inventory() {
       categoria: product.categoria,
       proveedor_id: product.proveedor_id || '',
       peso_kg: product.peso_kg ? product.peso_kg.toString() : '',
-      precio_suelto: product.precio_suelto ? product.precio_suelto.toString() : ''
+      precio_suelto: product.precio_suelto ? product.precio_suelto.toString() : '',
+      precio_costo_suelto: product.precio_costo_suelto ? product.precio_costo_suelto.toString() : ''
     });
     setIsDialogOpen(true);
   };
@@ -103,7 +105,8 @@ export function Inventory() {
       categoria: '', 
       proveedor_id: proveedores.length > 0 ? proveedores[0].id : '',
       peso_kg: '',
-      precio_suelto: ''
+      precio_suelto: '',
+      precio_costo_suelto: ''
     });
     setIsDialogOpen(true);
   };
@@ -113,6 +116,13 @@ export function Inventory() {
     try {
       const selectedProveedor = proveedores.find(p => p.id === formData.proveedor_id);
       
+      let calculatedPrecioCostoSuelto = null;
+      if (formData.precio_costo_suelto) {
+        calculatedPrecioCostoSuelto = parseFloat(formData.precio_costo_suelto);
+      } else if (formData.peso_kg && parseFloat(formData.peso_kg) > 0) {
+        calculatedPrecioCostoSuelto = parseFloat(formData.precio_costo) / parseFloat(formData.peso_kg);
+      }
+
       const productData = {
         nombre: formData.nombre,
         sku: formData.sku,
@@ -123,7 +133,8 @@ export function Inventory() {
         proveedor_id: formData.proveedor_id || null,
         proveedor: selectedProveedor ? selectedProveedor.nombre : 'Sin proveedor', // Mantenemos compatibilidad con la columna anterior
         peso_kg: formData.peso_kg ? parseFloat(formData.peso_kg) : null,
-        precio_suelto: formData.precio_suelto ? parseFloat(formData.precio_suelto) : null
+        precio_suelto: formData.precio_suelto ? parseFloat(formData.precio_suelto) : null,
+        precio_costo_suelto: calculatedPrecioCostoSuelto
       };
 
       if (editingProduct) {
@@ -278,7 +289,7 @@ export function Inventory() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="precio_suelto" className="text-sm font-medium leading-none">
-                    Precio Suelto por Kg ($) <span className="text-slate-400 font-normal">- Opcional</span>
+                    Precio Venta Suelto por Kg ($) <span className="text-slate-400 font-normal">- Opcional</span>
                   </label>
                   <input 
                     id="precio_suelto" 
@@ -288,6 +299,21 @@ export function Inventory() {
                     value={formData.precio_suelto} 
                     onChange={handleInputChange} 
                     placeholder="Ej: 2500"
+                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="precio_costo_suelto" className="text-sm font-medium leading-none">
+                    Precio Costo Suelto por Kg ($) <span className="text-slate-400 font-normal">- Opcional</span>
+                  </label>
+                  <input 
+                    id="precio_costo_suelto" 
+                    name="precio_costo_suelto" 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.precio_costo_suelto} 
+                    onChange={handleInputChange} 
+                    placeholder="Auto si está vacío"
                     className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
                   />
                 </div>

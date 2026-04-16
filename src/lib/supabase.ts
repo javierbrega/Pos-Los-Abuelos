@@ -40,6 +40,7 @@ export type Product = {
   proveedor?: string; // For backward compatibility if needed
   peso_kg?: number;
   precio_suelto?: number;
+  precio_costo_suelto?: number;
   created_at?: string;
 };
 
