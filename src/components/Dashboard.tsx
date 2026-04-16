@@ -155,6 +155,26 @@ export function Dashboard() {
     }
 
     fetchDashboardData();
+
+    // Subscribe to realtime changes in ventas
+    const ventasSubscription = supabase
+      .channel('dashboard-ventas-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ventas'
+        },
+        () => {
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ventasSubscription);
+    };
   }, []);
 
   return (
