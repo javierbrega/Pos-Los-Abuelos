@@ -17,6 +17,7 @@ export function POSSystem() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
+  const [saleDate, setSaleDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sueltoModal, setSueltoModal] = useState<{isOpen: boolean, product: Product | null, kg: string}>({isOpen: false, product: null, kg: ''});
 
   useEffect(() => {
@@ -235,10 +236,19 @@ export function POSSystem() {
     setLoading(true);
 
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const saleTimestamp = saleDate === todayStr 
+        ? new Date().toISOString() 
+        : new Date(saleDate + 'T12:00:00').toISOString();
+
       // 1. Create sale record
       const { data: saleData, error: saleError } = await supabase
         .from('ventas')
-        .insert([{ total, metodo_pago: metodoPago }])
+        .insert([{ 
+          total, 
+          metodo_pago: metodoPago,
+          created_at: saleTimestamp
+        }])
         .select()
         .single();
 
@@ -265,7 +275,8 @@ export function POSSystem() {
             precio_unitario: unitPrice,
             subtotal: subtotal,
             precio_costo: unitCost,
-            proveedor: getSupplierName(item)
+            proveedor: getSupplierName(item),
+            created_at: saleTimestamp
           }]);
         
         if (itemError) throw itemError;
@@ -299,9 +310,29 @@ export function POSSystem() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Punto de Venta</h2>
-        <p className="text-slate-500 mt-2">Registra nuevas ventas, selecciona el método de pago y descuenta stock.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Punto de Venta</h2>
+          <p className="text-slate-500 mt-2">Registra nuevas ventas, selecciona el método de pago y descuenta stock.</p>
+        </div>
+        <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+          <label htmlFor="sale-date" className="text-sm font-medium text-slate-700 whitespace-nowrap">
+            Fecha de Venta:
+          </label>
+          <input 
+            id="sale-date"
+            type="date" 
+            value={saleDate}
+            max={new Date().toISOString().split('T')[0]}
+            onChange={(e) => setSaleDate(e.target.value)}
+            className="border border-slate-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50"
+          />
+          {saleDate !== new Date().toISOString().split('T')[0] && (
+            <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded border border-amber-200 whitespace-nowrap">
+              Venta Atrasada
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
