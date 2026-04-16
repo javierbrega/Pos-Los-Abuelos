@@ -1,13 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import { DollarSign, PackageOpen, TrendingUp, AlertTriangle, Truck } from 'lucide-react';
+import { DollarSign, PackageOpen, TrendingUp, AlertTriangle, Truck, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
 export function Dashboard() {
   const [todaySales, setTodaySales] = useState<number>(0);
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [totalProducts, setTotalProducts] = useState<number>(0);
   const [supplierDebt, setSupplierDebt] = useState<Record<string, number>>({});
+  const [proveedores, setProveedores] = useState<Record<string, string>>({});
+  
+  // New chart states
+  const [weeklySales, setWeeklySales] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topRevenue, setTopRevenue] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +43,11 @@ export function Dashboard() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        
         const { data: sales } = await supabase
           .from('ventas')
           .select('total')
@@ -40,23 +56,95 @@ export function Dashboard() {
         const salesTotal = sales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
         setTodaySales(salesTotal);
 
-        // Fetch supplier debt (cost of items sold this month)
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
+        // Fetch last 7 days sales for chart
+        const { data: recentSales } = await supabase
+          .from('ventas')
+          .select('created_at, total, metodo_pago')
+          .gte('created_at', sevenDaysAgo.toISOString());
 
+        const last7Days = Array.from({length: 7}, (_, i) => {
+          const d = new Date(sevenDaysAgo);
+          d.setDate(d.getDate() + i);
+          return { 
+            date: d.toLocaleDateString('es-AR', { weekday: 'short' }), 
+            fullDate: d.toISOString().split('T')[0], 
+            total: 0 
+          };
+        });
+
+        const paymentStats = { Efectivo: 0, Transferencia: 0 };
+
+        if (recentSales) {
+          recentSales.forEach(sale => {
+            const saleDate = sale.created_at.split('T')[0];
+            const dayObj = last7Days.find(d => d.fullDate === saleDate);
+            if (dayObj) dayObj.total += Number(sale.total);
+          });
+        }
+        setWeeklySales(last7Days);
+
+        // Fetch month sales for payment methods pie chart
+        const { data: monthSales } = await supabase
+          .from('ventas')
+          .select('total, metodo_pago')
+          .gte('created_at', startOfMonth.toISOString());
+
+        if (monthSales) {
+          monthSales.forEach(sale => {
+            if (sale.metodo_pago === 'Efectivo') paymentStats.Efectivo += Number(sale.total);
+            if (sale.metodo_pago === 'Transferencia') paymentStats.Transferencia += Number(sale.total);
+          });
+        }
+        setPaymentMethods([
+          { name: 'Efectivo', value: paymentStats.Efectivo },
+          { name: 'Transferencia', value: paymentStats.Transferencia }
+        ]);
+
+        // Fetch proveedores to map UUIDs to names if needed
+        const { data: provData } = await supabase
+          .from('proveedores')
+          .select('id, nombre');
+        
+        const provMap: Record<string, string> = {};
+        if (provData) {
+          provData.forEach(p => {
+            provMap[p.id] = p.nombre;
+          });
+        }
+        setProveedores(provMap);
+
+        // Fetch supplier debt (cost of items sold this month) and product stats
         const { data: items } = await supabase
           .from('venta_items')
-          .select('cantidad, precio_costo, proveedor')
+          .select('cantidad, precio_costo, subtotal, proveedor, producto_id, productos(nombre)')
           .gte('created_at', startOfMonth.toISOString());
 
         if (items) {
-          const debt = items.reduce((acc: Record<string, number>, item) => {
+          const debt = items.reduce((acc: Record<string, number>, item: any) => {
             const cost = item.cantidad * item.precio_costo;
-            acc[item.proveedor] = (acc[item.proveedor] || 0) + cost;
+            // If the proveedor string is a UUID, map it to the name, otherwise use the string
+            const provName = provMap[item.proveedor] || item.proveedor || 'Sin proveedor';
+            acc[provName] = (acc[provName] || 0) + cost;
             return acc;
           }, {});
           setSupplierDebt(debt);
+
+          // Calculate top products
+          const productStats: Record<string, { nombre: string, cantidad: number, ingresos: number }> = {};
+          items.forEach((item: any) => {
+            const prodName = item.productos?.nombre || 'Desconocido';
+            if (!productStats[item.producto_id]) {
+              productStats[item.producto_id] = { nombre: prodName, cantidad: 0, ingresos: 0 };
+            }
+            productStats[item.producto_id].cantidad += item.cantidad;
+            productStats[item.producto_id].ingresos += Number(item.subtotal);
+          });
+
+          const sortedByQty = Object.values(productStats).sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
+          const sortedByRev = Object.values(productStats).sort((a, b) => b.ingresos - a.ingresos).slice(0, 5);
+
+          setTopProducts(sortedByQty);
+          setTopRevenue(sortedByRev);
         }
 
       } catch (error) {
@@ -128,6 +216,135 @@ export function Dashboard() {
             <p className="text-xs text-slate-500 mt-1">
               +4.3% este mes
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics Section */}
+      <h3 className="text-xl font-bold tracking-tight text-slate-900 mt-8 mb-4">Analíticas del Negocio</h3>
+      
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
+        {/* Ventas 7 días */}
+        <Card className="bg-white border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Ventas (Últimos 7 días)</CardTitle>
+            <TrendingUp className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklySales} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fontSize: 12, fill: '#64748b'}} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                  <Tooltip 
+                    contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                    formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Ventas']}
+                  />
+                  <Line type="monotone" dataKey="total" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Métodos de Pago */}
+        <Card className="bg-white border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Métodos de Pago (Mes Actual)</CardTitle>
+            <PieChartIcon className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentMethods}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {paymentMethods.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Monto']}
+                    contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Productos Más Vendidos */}
+        <Card className="bg-white border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Productos Más Vendidos (Mes Actual)</CardTitle>
+            <BarChart3 className="h-4 w-4 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] mt-4">
+              {topProducts.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topProducts} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      cursor={{fill: '#f8fafc'}}
+                      contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                      formatter={(value: number) => [value.toLocaleString('es-AR', {maximumFractionDigits: 2}), 'Cantidad']}
+                    />
+                    <Bar dataKey="cantidad" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20}>
+                      {topProducts.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#4f46e5' : '#818cf8'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">No hay datos suficientes</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mayor Recaudación */}
+        <Card className="bg-white border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Mayor Recaudación (Mes Actual)</CardTitle>
+            <DollarSign className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] mt-4">
+              {topRevenue.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topRevenue} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="nombre" type="category" width={100} tick={{fontSize: 11, fill: '#64748b'}} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      cursor={{fill: '#f8fafc'}}
+                      contentStyle={{borderRadius: '8px', border: '1px solid #e2e8f0'}}
+                      formatter={(value: number) => [`$${value.toLocaleString('es-AR', {minimumFractionDigits: 2})}`, 'Ingresos']}
+                    />
+                    <Bar dataKey="ingresos" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20}>
+                      {topRevenue.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#059669' : '#34d399'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">No hay datos suficientes</div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

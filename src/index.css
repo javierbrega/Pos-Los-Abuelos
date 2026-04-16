@@ -6,6 +6,30 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    --color-emerald-50: #f4f7ed;
+    --color-emerald-100: #e5eed6;
+    --color-emerald-200: #ccdfb3;
+    --color-emerald-300: #adc987;
+    --color-emerald-400: #8eb05c;
+    --color-emerald-500: #71953f;
+    --color-emerald-600: #57752e;
+    --color-emerald-700: #435a25;
+    --color-emerald-800: #364821;
+    --color-emerald-900: #2f3e1f;
+    --color-emerald-950: #17210d;
+
+    --color-slate-50: var(--color-stone-50);
+    --color-slate-100: var(--color-stone-100);
+    --color-slate-200: var(--color-stone-200);
+    --color-slate-300: var(--color-stone-300);
+    --color-slate-400: var(--color-stone-400);
+    --color-slate-500: var(--color-stone-500);
+    --color-slate-600: var(--color-stone-600);
+    --color-slate-700: var(--color-stone-700);
+    --color-slate-800: var(--color-stone-800);
+    --color-slate-900: var(--color-stone-900);
+    --color-slate-950: var(--color-stone-950);
+
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);

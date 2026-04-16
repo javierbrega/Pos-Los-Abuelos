@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Sale, SaleItem } from '../lib/supabase';
-import { Calculator, DollarSign, TrendingUp, Save } from 'lucide-react';
+import { Calculator, DollarSign, TrendingUp, Save, List } from 'lucide-react';
 import { toast } from 'sonner';
+
+type DetailedItem = {
+  id: string;
+  nombre: string;
+  cantidad: number;
+  precio_unitario: number;
+  precio_costo: number;
+  subtotal_venta: number;
+  subtotal_costo: number;
+  ganancia: number;
+};
 
 export function CashRegister() {
   const [sales, setSales] = useState<Sale[]>([]);
+  const [detailedItems, setDetailedItems] = useState<DetailedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [retiroGanancia, setRetiroGanancia] = useState<string>('');
   const [saldoApertura, setSaldoApertura] = useState<string>('');
+  const [activeModal, setActiveModal] = useState<'ventas' | 'costos' | 'ganancias' | null>(null);
   
   const [stats, setStats] = useState({
     totalVentas: 0,
@@ -49,13 +62,50 @@ export function CashRegister() {
         
         const { data: itemsData, error: itemsError } = await supabase
           .from('venta_items')
-          .select('cantidad, precio_costo')
+          .select(`
+            id,
+            cantidad,
+            precio_unitario,
+            precio_costo,
+            subtotal,
+            producto_id,
+            productos (nombre)
+          `)
           .in('venta_id', saleIds);
           
         if (itemsError) throw itemsError;
         
         if (itemsData) {
           totalCosto = itemsData.reduce((acc, item) => acc + (item.cantidad * item.precio_costo), 0);
+          
+          // Process detailed items
+          const itemMap = new Map<string, DetailedItem>();
+          
+          itemsData.forEach((item: any) => {
+            const prodName = item.productos?.nombre || 'Producto Desconocido';
+            const prodId = item.producto_id;
+            
+            if (itemMap.has(prodId)) {
+              const existing = itemMap.get(prodId)!;
+              existing.cantidad += item.cantidad;
+              existing.subtotal_venta += item.subtotal;
+              existing.subtotal_costo += (item.cantidad * item.precio_costo);
+              existing.ganancia = existing.subtotal_venta - existing.subtotal_costo;
+            } else {
+              itemMap.set(prodId, {
+                id: prodId,
+                nombre: prodName,
+                cantidad: item.cantidad,
+                precio_unitario: item.precio_unitario,
+                precio_costo: item.precio_costo,
+                subtotal_venta: item.subtotal,
+                subtotal_costo: item.cantidad * item.precio_costo,
+                ganancia: item.subtotal - (item.cantidad * item.precio_costo)
+              });
+            }
+          });
+          
+          setDetailedItems(Array.from(itemMap.values()));
         }
         
         totalVentas = salesData.reduce((acc, sale) => acc + sale.total, 0);
@@ -116,15 +166,119 @@ export function CashRegister() {
     }
   };
 
+  const renderModal = () => {
+    if (!activeModal) return null;
+
+    let title = '';
+    let total = 0;
+    let columns = [];
+
+    if (activeModal === 'ventas') {
+      title = 'Detalle de Ventas';
+      total = stats.totalVentas;
+      columns = ['Producto', 'Cantidad', 'P. Venta', 'Subtotal'];
+    } else if (activeModal === 'costos') {
+      title = 'Detalle de Costos de Mercadería';
+      total = stats.costoMercaderia;
+      columns = ['Producto', 'Cantidad', 'Costo Unit.', 'Costo Total'];
+    } else if (activeModal === 'ganancias') {
+      title = 'Detalle de Ganancias';
+      total = stats.gananciaNeta;
+      columns = ['Producto', 'Venta Total', 'Costo Total', 'Ganancia'];
+    }
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-3xl shadow-xl flex flex-col max-h-[90vh]">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-xl text-slate-900">{title}</h3>
+              <p className="text-sm text-slate-500">Respaldo detallado del día</p>
+            </div>
+            <button 
+              onClick={() => setActiveModal(null)}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-slate-500 uppercase bg-slate-50">
+                <tr>
+                  {columns.map((col, i) => (
+                    <th key={i} className={`px-4 py-3 font-medium ${i > 0 ? 'text-right' : ''}`}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {detailedItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 font-medium text-slate-900">{item.nombre}</td>
+                    {activeModal === 'ventas' && (
+                      <>
+                        <td className="px-4 py-3 text-right">{item.cantidad.toLocaleString('es-AR', {maximumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right">${item.precio_unitario.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right font-medium">${item.subtotal_venta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                      </>
+                    )}
+                    {activeModal === 'costos' && (
+                      <>
+                        <td className="px-4 py-3 text-right">{item.cantidad.toLocaleString('es-AR', {maximumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right">${item.precio_costo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right font-medium text-red-600">${item.subtotal_costo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                      </>
+                    )}
+                    {activeModal === 'ganancias' && (
+                      <>
+                        <td className="px-4 py-3 text-right">${item.subtotal_venta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right">${item.subtotal_costo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right font-medium text-emerald-600">${item.ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+                {detailedItems.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No hay datos para mostrar</td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot className="bg-slate-50 font-bold">
+                <tr>
+                  <td className="px-4 py-3 text-slate-900">TOTAL</td>
+                  <td colSpan={2}></td>
+                  <td className={`px-4 py-3 text-right ${activeModal === 'costos' ? 'text-red-600' : activeModal === 'ganancias' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                    ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          
+          <div className="p-4 border-t border-slate-100 flex justify-end">
+            <button 
+              onClick={() => setActiveModal(null)}
+              className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cierre de Caja</h2>
         <p className="text-slate-500 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
           <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
             <h3 className="tracking-tight text-sm font-medium">Total Ventas (Hoy)</h3>
             <DollarSign className="h-4 w-4 text-slate-500" />
@@ -136,9 +290,16 @@ export function CashRegister() {
               <p className="text-xs text-slate-500">Transferencias: ${stats.totalTransferencias.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
             </div>
           </div>
+          <button 
+            onClick={() => setActiveModal('ventas')}
+            className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+            title="Ver detalle"
+          >
+            <List className="w-4 h-4" />
+          </button>
         </div>
         
-        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm relative overflow-hidden group">
           <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
             <h3 className="tracking-tight text-sm font-medium">Costo de Mercadería</h3>
             <Calculator className="h-4 w-4 text-slate-500" />
@@ -146,9 +307,16 @@ export function CashRegister() {
           <div className="p-6 pt-0">
             <div className="text-2xl font-bold text-red-600">-${stats.costoMercaderia.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
           </div>
+          <button 
+            onClick={() => setActiveModal('costos')}
+            className="absolute top-4 right-10 p-1.5 bg-slate-100 rounded-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200"
+            title="Ver detalle"
+          >
+            <List className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-emerald-50 text-slate-950 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-emerald-50 text-slate-950 shadow-sm relative overflow-hidden group">
           <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
             <h3 className="tracking-tight text-sm font-medium text-emerald-800">Ganancia Neta</h3>
             <TrendingUp className="h-4 w-4 text-emerald-600" />
@@ -156,6 +324,13 @@ export function CashRegister() {
           <div className="p-6 pt-0">
             <div className="text-2xl font-bold text-emerald-700">${stats.gananciaNeta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
           </div>
+          <button 
+            onClick={() => setActiveModal('ganancias')}
+            className="absolute top-4 right-10 p-1.5 bg-emerald-100 rounded-md text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-200"
+            title="Ver detalle"
+          >
+            <List className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -228,6 +403,8 @@ export function CashRegister() {
           </div>
         </div>
       </div>
+      
+      {renderModal()}
     </div>
   );
 }
