@@ -25,7 +25,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
         <div className="p-6 flex flex-col items-center border-b border-[#3a2a1b] shrink-0">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-[#fdfbf7] flex items-center justify-center mb-3 shadow-lg ring-4 ring-[#3a2a1b]">
             <img 
-              src="/logo.jpg" 
+              src="/logo.jpeg" 
               alt="Los Abuelos Logo" 
               className="w-full h-full object-cover scale-110"
               onError={(e) => {
