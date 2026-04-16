@@ -38,7 +38,9 @@ export function Inventory() {
     proveedor_id: '',
     peso_kg: '',
     precio_suelto: '',
-    precio_costo_suelto: ''
+    precio_costo_suelto: '',
+    fecha_ingreso: new Date().toISOString().split('T')[0],
+    comprobante: ''
   });
 
   // Stock entry form state
@@ -275,10 +277,29 @@ export function Inventory() {
         if (error) throw error;
         toast.success('Producto actualizado exitosamente');
       } else {
-        const { error } = await supabase
+        const { data: newProd, error } = await supabase
           .from('productos')
-          .insert([productData]);
+          .insert([productData])
+          .select()
+          .single();
         if (error) throw error;
+
+        // Si se ingresó stock inicial, registrar la entrada de stock
+        if (productData.stock_actual > 0) {
+          const { error: stockError } = await supabase
+            .from('entradas_stock')
+            .insert([{
+              producto_id: newProd.id,
+              cantidad: productData.stock_actual,
+              fecha: formData.fecha_ingreso || new Date().toISOString().split('T')[0],
+              comprobante: formData.comprobante || ''
+            }]);
+          
+          if (stockError) {
+            console.error('Error recording initial stock entry:', stockError);
+          }
+        }
+
         toast.success('Producto creado exitosamente');
       }
 
@@ -397,6 +418,19 @@ export function Inventory() {
                   <input id="categoria" name="categoria" value={formData.categoria} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
                 </div>
               </div>
+
+              {!editingProduct && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="fecha_ingreso" className="text-sm font-medium leading-none">Fecha de Ingreso</label>
+                    <input id="fecha_ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent [color-scheme:dark]" />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="comprobante" className="text-sm font-medium leading-none">N° Remito/Factura</label>
+                    <input id="comprobante" name="comprobante" type="text" placeholder="Opcional" value={formData.comprobante} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
