@@ -19,9 +19,9 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f4f1ea] text-slate-900 overflow-hidden">
+    <div className="flex h-screen bg-[#f4f1ea] text-slate-900 overflow-hidden print:h-auto print:overflow-visible print:block">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#4a3623] text-[#f4f1ea] flex flex-col h-full shadow-xl z-10">
+      <aside className="w-64 bg-[#4a3623] text-[#f4f1ea] flex flex-col h-full shadow-xl z-10 print:hidden">
         <div className="p-6 flex flex-col items-center border-b border-[#3a2a1b] shrink-0">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-[#fdfbf7] flex items-center justify-center mb-3 shadow-lg ring-4 ring-[#3a2a1b]">
             <img 
@@ -68,8 +68,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-[#f4f1ea]">
-        <div className="p-8 max-w-7xl mx-auto">
+      <main className="flex-1 overflow-y-auto bg-[#f4f1ea] print:overflow-visible print:bg-white print:p-0">
+        <div className="p-8 max-w-7xl mx-auto print:p-0 print:max-w-none print:m-0">
           {children}
         </div>
       </main>

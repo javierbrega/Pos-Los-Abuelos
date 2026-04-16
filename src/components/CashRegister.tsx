@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Sale, SaleItem, CierreCaja } from '../lib/supabase';
-import { Calculator, DollarSign, TrendingUp, Save, List, History, Printer, CheckCircle2, Clock } from 'lucide-react';
+import { Calculator, DollarSign, TrendingUp, Save, List, History, Printer, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type DetailedItem = {
@@ -24,7 +24,7 @@ export function CashRegister() {
   const [viewMode, setViewMode] = useState<'actual' | 'historial'>('actual');
   const [history, setHistory] = useState<CierreCaja[]>([]);
   const [unclosedDates, setUnclosedDates] = useState<string[]>([]);
-  const [printingCierre, setPrintingCierre] = useState<CierreCaja | null>(null);
+  const [previewCierre, setPreviewCierre] = useState<CierreCaja | null>(null);
   const [isTodayClosed, setIsTodayClosed] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
@@ -222,11 +222,7 @@ export function CashRegister() {
   };
 
   const handlePrint = (cierre: CierreCaja) => {
-    setPrintingCierre(cierre);
-    setTimeout(() => {
-      window.print();
-      setPrintingCierre(null);
-    }, 500);
+    setPreviewCierre(cierre);
   };
 
   const renderModal = () => {
@@ -334,8 +330,9 @@ export function CashRegister() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-end">
+    <>
+      <div className={`space-y-6 pb-12 ${previewCierre ? 'print:hidden' : ''}`}>
+        <div className="flex justify-between items-end">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Cierre de Caja</h2>
           <p className="text-slate-500 mt-2">Resumen de ventas del día y cálculo de ganancias.</p>
@@ -620,66 +617,106 @@ export function CashRegister() {
       )}
       
       {renderModal()}
+    </div>
 
-      {/* Print Template (Hidden from screen, visible only on print) */}
-      {printingCierre && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 text-black">
-          <div className="max-w-md mx-auto border border-black p-6">
-            <div className="text-center mb-6 border-b border-black pb-4">
-              <h1 className="text-2xl font-bold uppercase tracking-widest">Los Abuelos</h1>
-              <p className="text-sm uppercase mt-1">Ramos Generales</p>
-              <h2 className="text-xl font-bold mt-4">Cierre de Caja</h2>
-              <p className="text-sm mt-1">
-                Fecha: {new Date(printingCierre.fecha + 'T12:00:00').toLocaleDateString('es-AR')}
+    {/* Print Preview Modal */}
+    {previewCierre && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 print:static print:inset-auto print:bg-white print:p-0 print:block">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:max-w-none">
+          {/* Header - hidden when printing */}
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center print:hidden">
+            <h3 className="font-bold text-lg text-slate-900">Vista Previa</h3>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  if (window !== window.parent) {
+                    toast.error('Abre la app en una nueva pestaña para imprimir');
+                  } else {
+                    window.print();
+                  }
+                }} 
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md text-sm font-medium flex items-center gap-2 hover:bg-emerald-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" /> Imprimir
+              </button>
+              <button 
+                onClick={() => setPreviewCierre(null)} 
+                className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {window !== window.parent && (
+            <div className="bg-amber-50 text-amber-800 p-4 text-sm border-b border-amber-200 print:hidden flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+              <p>
+                El navegador bloquea la impresión dentro de esta vista previa. Para poder imprimir, <strong>abre la aplicación en una nueva pestaña</strong> haciendo clic en el ícono <strong>↗️ (Open in new tab)</strong> en la esquina superior derecha de tu pantalla.
               </p>
             </div>
+          )}
 
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
-                <span>Saldo de Apertura:</span>
-                <span>${printingCierre.saldo_apertura.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
-                <span>Ventas en Efectivo:</span>
-                <span>${printingCierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
-                <span>Ventas por Transferencia:</span>
-                <span>${printingCierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
-                <span>TOTAL VENTAS:</span>
-                <span>${printingCierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              
-              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
-                <span>Costo de Mercadería:</span>
-                <span>${printingCierre.costo_mercaderia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
-                <span>GANANCIA NETA:</span>
-                <span>${printingCierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+          {/* Receipt Content */}
+          <div className="p-8 overflow-y-auto print:overflow-visible print:p-0 text-black bg-white">
+            <div className="max-w-md mx-auto border border-black p-6 print:border-none print:p-0">
+              <div className="text-center mb-6 border-b border-black pb-4">
+                <h1 className="text-2xl font-bold uppercase tracking-widest">Los Abuelos</h1>
+                <p className="text-sm uppercase mt-1">Ramos Generales</p>
+                <h2 className="text-xl font-bold mt-4">Cierre de Caja</h2>
+                <p className="text-sm mt-1">
+                  Fecha: {new Date(previewCierre.fecha + 'T12:00:00').toLocaleDateString('es-AR')}
+                </p>
               </div>
 
-              <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
-                <span>Retiro de Ganancia:</span>
-                <span>${printingCierre.retiro_ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg border-b-2 border-black pb-1 mt-2">
-                <span>EFECTIVO EN CAJA:</span>
-                <span>
-                  ${(printingCierre.saldo_apertura + printingCierre.total_efectivo - printingCierre.retiro_ganancia).toLocaleString('es-AR', {minimumFractionDigits: 2})}
-                </span>
-              </div>
-            </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                  <span>Saldo de Apertura:</span>
+                  <span>${previewCierre.saldo_apertura.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                  <span>Ventas en Efectivo:</span>
+                  <span>${previewCierre.total_efectivo.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1">
+                  <span>Ventas por Transferencia:</span>
+                  <span>${previewCierre.total_transferencias.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                  <span>TOTAL VENTAS:</span>
+                  <span>${previewCierre.total_ventas.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                
+                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                  <span>Costo de Mercadería:</span>
+                  <span>${previewCierre.costo_mercaderia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between font-bold border-b border-black pb-1 mt-2">
+                  <span>GANANCIA NETA:</span>
+                  <span>${previewCierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
 
-            <div className="text-center mt-8 text-xs text-gray-500">
-              <p>Documento interno de control</p>
-              <p>Generado el {new Date().toLocaleString('es-AR')}</p>
+                <div className="flex justify-between border-b border-gray-300 border-dashed pb-1 mt-4">
+                  <span>Retiro de Ganancia:</span>
+                  <span>${previewCierre.retiro_ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-b-2 border-black pb-1 mt-2">
+                  <span>EFECTIVO EN CAJA:</span>
+                  <span>
+                    ${(previewCierre.saldo_apertura + previewCierre.total_efectivo - previewCierre.retiro_ganancia).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center mt-8 text-xs text-gray-500">
+                <p>Documento interno de control</p>
+                <p>Generado el {new Date().toLocaleString('es-AR')}</p>
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+    </>
   );
 }
