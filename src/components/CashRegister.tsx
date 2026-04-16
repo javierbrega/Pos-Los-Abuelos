@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Sale, SaleItem, CierreCaja } from '../lib/supabase';
-import { Calculator, DollarSign, TrendingUp, Save, List, History, Printer, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { Calculator, DollarSign, TrendingUp, Save, List, History, Printer, CheckCircle2, Clock, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type DetailedItem = {
@@ -27,6 +27,9 @@ export function CashRegister() {
   const [previewCierre, setPreviewCierre] = useState<CierreCaja | null>(null);
   const [isTodayClosed, setIsTodayClosed] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [editCierreModal, setEditCierreModal] = useState<{isOpen: boolean, cierre: CierreCaja | null}>({isOpen: false, cierre: null});
+  const [editFormData, setEditFormData] = useState({ saldo_apertura: '', retiro_ganancia: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   
   const [stats, setStats] = useState({
     totalVentas: 0,
@@ -218,6 +221,53 @@ export function CashRegister() {
     } catch (error: any) {
       console.error('Error saving cash register close:', error);
       toast.error(`Error al registrar el cierre: ${error?.message || ''}`);
+    }
+  };
+
+  const handleDeleteCierre = async (id: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.from('cierres_caja').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Cierre de caja eliminado exitosamente');
+      setDeleteConfirm(null);
+      fetchHistory();
+    } catch (error: any) {
+      console.error('Error deleting:', error);
+      toast.error('Error al eliminar el cierre: ' + (error.message || ''));
+      setLoading(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      if (!editCierreModal.cierre) return;
+      const apertura = parseFloat(editFormData.saldo_apertura) || 0;
+      const retiro = parseFloat(editFormData.retiro_ganancia) || 0;
+
+      if (retiro > editCierreModal.cierre.ganancia_neta) {
+        toast.error('El retiro no puede ser mayor a la ganancia neta');
+        return;
+      }
+
+      setLoading(true);
+      const { error } = await supabase
+        .from('cierres_caja')
+        .update({
+          saldo_apertura: apertura,
+          retiro_ganancia: retiro
+        })
+        .eq('id', editCierreModal.cierre.id);
+
+      if (error) throw error;
+      
+      toast.success('Cierre actualizado exitosamente');
+      setEditCierreModal({ isOpen: false, cierre: null });
+      fetchHistory();
+    } catch (error: any) {
+      console.error('Error updating:', error);
+      toast.error('Error al actualizar: ' + (error.message || ''));
+      setLoading(false);
     }
   };
 
@@ -592,13 +642,35 @@ export function CashRegister() {
                       ${cierre.ganancia_neta.toLocaleString('es-AR', {minimumFractionDigits: 2})}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => handlePrint(cierre)}
-                        className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
-                        title="Imprimir comprobante"
-                      >
-                        <Printer className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button 
+                          onClick={() => {
+                            setEditFormData({
+                              saldo_apertura: cierre.saldo_apertura.toString(),
+                              retiro_ganancia: cierre.retiro_ganancia.toString()
+                            });
+                            setEditCierreModal({ isOpen: true, cierre });
+                          }}
+                          className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 rounded-md transition-colors"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handlePrint(cierre)}
+                          className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-md transition-colors"
+                          title="Imprimir comprobante"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setDeleteConfirm(cierre.id)}
+                          className="inline-flex items-center justify-center p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-md transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -618,6 +690,81 @@ export function CashRegister() {
       
       {renderModal()}
     </div>
+
+    {/* Delete Confirm Modal */}
+    {deleteConfirm && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 print:hidden">
+        <div className="bg-zinc-900 rounded-lg p-6 w-full max-w-sm shadow-xl border border-zinc-800">
+          <h3 className="font-bold text-lg mb-2 text-zinc-100">Eliminar Cierre</h3>
+          <p className="text-sm text-zinc-400 mb-6">¿Estás seguro de que deseas eliminar este cierre de caja? Esta acción restablecerá el estado para que puedas cerrarlo nuevamente.</p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 rounded-md transition-colors"
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => handleDeleteCierre(deleteConfirm)}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+              disabled={loading}
+            >
+              {loading ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Cierre Modal */}
+    {editCierreModal.isOpen && editCierreModal.cierre && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 print:hidden">
+        <div className="bg-zinc-900 rounded-lg p-6 w-full max-w-sm shadow-xl border border-zinc-800">
+          <h3 className="font-bold text-lg mb-4 text-zinc-100">Editar Cierre de Caja</h3>
+          
+          <div className="space-y-4 mb-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Saldo de Apertura ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editFormData.saldo_apertura}
+                onChange={(e) => setEditFormData({...editFormData, saldo_apertura: e.target.value})}
+                className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Retiro de Ganancia ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editFormData.retiro_ganancia}
+                onChange={(e) => setEditFormData({...editFormData, retiro_ganancia: e.target.value})}
+                className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setEditCierreModal({isOpen: false, cierre: null})}
+              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 rounded-md transition-colors"
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors"
+              disabled={loading}
+            >
+              {loading ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Print Preview Modal */}
     {previewCierre && (
