@@ -78,6 +78,38 @@ export function Inventory() {
       
       if (productsError) throw productsError;
       
+      // Fetch latest stock entries per product to get payment conditions
+      let conditionMap = new Map<string, string>();
+      try {
+        const { data: latestEntries, error: entriesError } = await supabase
+          .from('entradas_stock')
+          .select('producto_id, condicion_pago')
+          .order('created_at', { ascending: false });
+          
+        if (entriesError) {
+          if (entriesError.code === '42703') {
+             console.error('CRITICAL: column condicion_pago is missing. Please run SQL migration.');
+             toast.error('Falta la columna "condicion_pago" en Supabase. Pídele el SQL al asistente.', { duration: 10000 });
+          } else {
+             throw entriesError;
+          }
+        } else if (latestEntries) {
+          latestEntries.forEach(entry => {
+            if (!conditionMap.has(entry.producto_id) && entry.condicion_pago) {
+               conditionMap.set(entry.producto_id, entry.condicion_pago);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not fetch stock entries for conditions', e);
+      }
+      
+      if (productsData) {
+        productsData.forEach(p => {
+          (p as any).ultima_condicion_pago = conditionMap.get(p.id) || null;
+        });
+      }
+
       // Fetch suppliers
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('proveedores')
@@ -188,6 +220,16 @@ export function Inventory() {
           toast.error('La tabla de historial no existe. Por favor ejecuta el script SQL.');
           return;
         }
+        if (error.code === '42703') {
+           const { data: fallbackData } = await supabase
+             .from('entradas_stock')
+             .select(`id, producto_id, cantidad, fecha, comprobante, created_at, productos (nombre, sku)`)
+             .order('fecha', { ascending: false })
+             .order('created_at', { ascending: false })
+             .limit(100);
+           setStockHistory(fallbackData || []);
+           return;
+        }
         throw error;
       }
       setStockHistory(data || []);
@@ -235,7 +277,20 @@ export function Inventory() {
           toast.error('Falta crear la tabla en la base de datos. Pídele al asistente que te dé el código SQL.');
           return;
         }
-        throw insertError;
+        if (insertError.code === '42703') {
+          toast.error('¡Atención! Falta la columna condicion_pago en tu base de datos. Pide al asistente el código SQL.', { duration: 10000 });
+          
+          // Intentamos insertar igual sin la condicion de pago para que no se tranque el sistema
+          const { error: fallbackError } = await supabase.from('entradas_stock').insert([{
+             producto_id: stockFormData.producto_id,
+             cantidad: cantidad,
+             fecha: stockFormData.fecha,
+             comprobante: stockFormData.comprobante
+          }]);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw insertError;
+        }
       }
 
       // 2. Update product stock
@@ -353,7 +408,17 @@ export function Inventory() {
             }]);
           
           if (stockError) {
-            console.error('Error recording initial stock entry:', stockError);
+             if (stockError.code === '42703') {
+               console.error('Missing condicion_pago column. Doing fallback insert.');
+               await supabase.from('entradas_stock').insert([{
+                 producto_id: newProd.id,
+                 cantidad: productData.stock_actual,
+                 fecha: formData.fecha_ingreso || new Date().toISOString().split('T')[0],
+                 comprobante: formData.comprobante || ''
+               }]);
+             } else {
+               console.error('Error recording initial stock entry:', stockError);
+             }
           }
           
           // Actualizar cuenta corriente si es necesario
@@ -880,7 +945,19 @@ export function Inventory() {
                 filteredProducts.map((product) => (
                   <tr key={product.id} className="border-b border-zinc-800 transition-colors hover:bg-zinc-800/50 data-[state=selected]:bg-zinc-800">
                     <td className="p-4 align-middle font-medium text-zinc-400">{product.sku}</td>
-                    <td className="p-4 align-middle font-semibold text-zinc-100">{product.nombre}</td>
+                    <td className="p-4 align-middle">
+                      <div className="font-semibold text-zinc-100">{product.nombre}</div>
+                      {(product as any).ultima_condicion_pago === 'cuenta_corriente' && (
+                        <div className="inline-flex mt-1 items-center px-1.5 py-0 rounded text-[9px] font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                          A Cuenta Corriente
+                        </div>
+                      )}
+                      {(product as any).ultima_condicion_pago === 'contado' && (
+                        <div className="inline-flex mt-1 items-center px-1.5 py-0 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Contado / Efvo
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 align-middle">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-b border-zinc-800lue-500/20">
                         {getSupplierName(product)}

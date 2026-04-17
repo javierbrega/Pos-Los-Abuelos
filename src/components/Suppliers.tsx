@@ -165,23 +165,43 @@ export function Suppliers() {
       // Fetch entradas de stock para sus productos as a proxy for debt charges
       // Note: This relies on the relation existing in PostgREST. If it fails, we fall back to just payments.
       let entradas: any[] = [];
-      try {
-        const { data: eData, error: eError } = await supabase
-          .from('entradas_stock')
-          .select(`
-            id, cantidad, fecha, comprobante, condicion_pago,
-            productos!inner(nombre, proveedor_id, precio_costo)
-          `)
-          .eq('productos.proveedor_id', supplier.id);
-          
-        if (!eError && eData) {
-          // Si cargaste la deuda a mano al crear el proveedor, eso no genera una entrada de stock.
-          // Para las entradas de stock, filtramos solo las que son cuenta corriente.
-          // Si el array está vacío, no pasa nada, mostraremos los pagos al menos.
-          entradas = eData.filter((e: any) => e.condicion_pago === 'cuenta_corriente');
-        }
-      } catch(e) {
-        console.warn('Could not fetch joined provider stock data:', e);
+      let missingColumn = false;
+      const { data: eData, error: eError } = await supabase
+        .from('entradas_stock')
+        .select(`
+          id, cantidad, fecha, comprobante, condicion_pago,
+          productos!inner(nombre, proveedor_id, precio_costo)
+        `)
+        .eq('productos.proveedor_id', supplier.id);
+        
+      if (eError && eError.code === '42703') {
+         missingColumn = true;
+         const { data: fallbackData, error: fallbackError } = await supabase
+           .from('entradas_stock')
+           .select(`
+             id, cantidad, fecha, comprobante,
+             productos!inner(nombre, proveedor_id, precio_costo)
+           `)
+           .eq('productos.proveedor_id', supplier.id);
+         
+         if (!fallbackError && fallbackData) {
+            // Si falta la columna, NO PODEMOS saber qué se mandó a cuenta corriente o qué se pagó contado de lo viejo.
+            // Para no falsear datos y mostrar un historial gigante (incluyendo contado),
+            // lo dejamos vacío y que la app dependa del "Cargo Manual/Deuda Inicial" como venía haciendo.
+            // Opcionalmente, el usuario puede regularizar su base de datos.
+            entradas = [];
+         }
+      } else if (!eError && eData) {
+        // Si cargaste la deuda a mano al crear el proveedor, eso no genera una entrada de stock.
+        // Para las entradas de stock, filtramos solo las que son cuenta corriente.
+        // Si el array está vacío, no pasa nada, mostraremos los pagos al menos.
+        entradas = eData.filter((e: any) => e.condicion_pago === 'cuenta_corriente');
+      } else {
+        console.warn('Could not fetch joined provider stock data:', eError);
+      }
+
+      if (missingColumn) {
+        toast.error('Atención: Falta agregar la columna condicion_pago en Supabase para ver el historial detallado de deuda. Pide el código SQL al asistente.', { duration: 10000 });
       }
 
       // Generar un "Cargo Inicial" manual si la deuda actual no coincide con la suma.
@@ -212,21 +232,23 @@ export function Suppliers() {
         }))
       ];
 
-      // Si la deuda que tiene el proveedor anotada es mayor a lo que dice el historial (porque se puso a mano al principio)
-      // Agregamos un registro ficticio de "Deuda inicial" para que las cuentas cierren a los ojos del usuario
+      // Si la deuda que tiene el proveedor anotada es mayor o menor a lo que dice el historial (porque se puso a mano al principio)
+      // Agregamos un registro ficticio de "Ajuste de Saldo" para que las cuentas cierren a los ojos del usuario
       if (Math.abs(balanceCalculado - deudaDeclarada) > 0.01) {
-         // Verificamos si falta plata (cargo a mano)
+         // Calculamos cuánta plata falta en el Historial para llegar a la deuda declarada.
+         // Ej: Balance Historial = 0, Deuda real (Declarada) = 400.000. Falta sumar 400.000. => Diferencia = +400.000
          const diferencia = deudaDeclarada - balanceCalculado;
-         if (diferencia !== 0) {
-           combined.push({
-             id: 'ajuste-inicial',
-             date: new Date(supplier.created_at || new Date().toISOString()),
-             type: 'cargo',
-             description: diferencia > 0 ? 'Deuda Inicial Cargada a Mano (👉 Edita al proveedor con el ✏️ para borrar o cambiar esto)' : 'Ajuste de Saldo',
-             amount: diferencia,
-             notas: 'Ajuste calculado por diferencia de movimientos'
-           });
-         }
+         
+         combined.push({
+           id: 'ajuste-inicial',
+           date: new Date(supplier.created_at || new Date().toISOString()),
+           type: diferencia > 0 ? 'cargo' : 'pago', // Si falta deuda es un cargo (+), si sobra es un "pago/descuento (-)"
+           description: diferencia > 0 
+              ? 'Deuda Inicial Cargada a Mano (👉 Edita al proveedor con el ✏️ para cambiar o borrar)' 
+              : 'Ajuste a Favor / Pago Cargado a Mano',
+           amount: diferencia, // Mantenemos el signo para que la sumatoria total del historial cuadre con el Total Arriba
+           notas: 'Ajuste de cuadro automático por modificación manual en la ficha'
+         });
       }
 
       combined.sort((a, b) => b.date.getTime() - a.date.getTime());
