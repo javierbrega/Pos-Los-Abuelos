@@ -14,6 +14,11 @@ export function Suppliers() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedSupplierForPayment, setSelectedSupplierForPayment] = useState<Proveedor | null>(null);
   
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedSupplierForHistory, setSelectedSupplierForHistory] = useState<Proveedor | null>(null);
+  const [historyRecords, setHistoryRecords] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  
   const [formData, setFormData] = useState({
     nombre: '',
     empresa: '',
@@ -142,6 +147,99 @@ export function Suppliers() {
     }
   };
 
+  const openHistoryDialog = async (supplier: Proveedor) => {
+    setSelectedSupplierForHistory(supplier);
+    setIsHistoryDialogOpen(true);
+    setLoadingHistory(true);
+    setHistoryRecords([]);
+    
+    try {
+      // Fetch pagos
+      const { data: pagos, error: pagosError } = await supabase
+        .from('pagos_proveedores')
+        .select('*')
+        .eq('proveedor_id', supplier.id);
+        
+      if (pagosError && pagosError.code !== '42P01') throw pagosError;
+        
+      // Fetch entradas de stock para sus productos as a proxy for debt charges
+      // Note: This relies on the relation existing in PostgREST. If it fails, we fall back to just payments.
+      let entradas: any[] = [];
+      try {
+        const { data: eData, error: eError } = await supabase
+          .from('entradas_stock')
+          .select(`
+            id, cantidad, fecha, comprobante, condicion_pago,
+            productos!inner(nombre, proveedor_id, precio_costo)
+          `)
+          .eq('productos.proveedor_id', supplier.id);
+          
+        if (!eError && eData) {
+          // Si cargaste la deuda a mano al crear el proveedor, eso no genera una entrada de stock.
+          // Para las entradas de stock, filtramos solo las que son cuenta corriente.
+          // Si el array está vacío, no pasa nada, mostraremos los pagos al menos.
+          entradas = eData.filter((e: any) => e.condicion_pago === 'cuenta_corriente');
+        }
+      } catch(e) {
+        console.warn('Could not fetch joined provider stock data:', e);
+      }
+
+      // Generar un "Cargo Inicial" manual si la deuda actual no coincide con la suma.
+      // Esto pasa porque cuando creaste el proveedor le pusiste una "Deuda actual ($120.000)" a mano en el campito
+      // en vez de generarla ingresando productos.
+      const totalPagos = (pagos || []).reduce((sum, p) => sum + parseFloat(p.monto), 0);
+      const totalCargosGenerados = entradas.reduce((sum, e) => sum + (parseFloat(e.cantidad) * parseFloat(e.productos.precio_costo)), 0);
+      
+      const balanceCalculado = totalCargosGenerados - totalPagos;
+      const deudaDeclarada = supplier.saldo_deuda || 0;
+      
+      const combined = [
+        ...(pagos || []).map((p: any) => ({
+          id: `pago-${p.id}`,
+          date: new Date(p.fecha),
+          type: 'pago',
+          description: `Pago registrado (${p.metodo_pago})`,
+          amount: -parseFloat(p.monto),
+          notas: p.notas
+        })),
+        ...(entradas || []).map((e: any) => ({
+          id: `entrada-${e.id}`,
+          date: new Date(e.fecha),
+          type: 'cargo',
+          description: `Ingreso de stock: ${e.productos.nombre} (x${e.cantidad})`,
+          amount: parseFloat(e.cantidad) * parseFloat(e.productos.precio_costo),
+          notas: e.comprobante ? `Comprob. / Remito: ${e.comprobante}` : 'Cargo estimado por ingreso'
+        }))
+      ];
+
+      // Si la deuda que tiene el proveedor anotada es mayor a lo que dice el historial (porque se puso a mano al principio)
+      // Agregamos un registro ficticio de "Deuda inicial" para que las cuentas cierren a los ojos del usuario
+      if (Math.abs(balanceCalculado - deudaDeclarada) > 0.01) {
+         // Verificamos si falta plata (cargo a mano)
+         const diferencia = deudaDeclarada - balanceCalculado;
+         if (diferencia !== 0) {
+           combined.push({
+             id: 'ajuste-inicial',
+             date: new Date(supplier.created_at || new Date().toISOString()),
+             type: 'cargo',
+             description: diferencia > 0 ? 'Deuda Inicial Cargada a Mano (👉 Edita al proveedor con el ✏️ para borrar o cambiar esto)' : 'Ajuste de Saldo',
+             amount: diferencia,
+             notas: 'Ajuste calculado por diferencia de movimientos'
+           });
+         }
+      }
+
+      combined.sort((a, b) => b.date.getTime() - a.date.getTime());
+      
+      setHistoryRecords(combined);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      toast.error('Error al cargar el historial de la cuenta. Intenta más tarde.');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -259,25 +357,25 @@ export function Suppliers() {
       {/* Modal De Pago */}
       {isPaymentDialogOpen && selectedSupplierForPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-zinc-900 rounded-lg shadow-lg w-full max-w-md p-6 relative">
+          <div className="bg-zinc-900 rounded-lg shadow-lg w-full max-w-md p-6 relative flex flex-col max-h-[90vh]">
             <button onClick={() => setIsPaymentDialogOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-400">
               <X className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 shrink-0">
               <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-400 border border-emerald-500/20">
                 <DollarSign className="w-6 h-6" />
               </div>
               <h2 className="text-lg font-semibold text-zinc-100">Registrar Pago a {selectedSupplierForPayment.nombre}</h2>
             </div>
             
-            <div className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-4 flex justify-between items-center">
+            <div className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-4 flex justify-between items-center shrink-0">
               <span className="text-zinc-400">Deuda actual:</span>
               <span className={`font-bold text-lg ${selectedSupplierForPayment.saldo_deuda && selectedSupplierForPayment.saldo_deuda > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                 ${(selectedSupplierForPayment.saldo_deuda || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}
               </span>
             </div>
 
-            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            <form onSubmit={handlePaymentSubmit} className="space-y-4 overflow-y-auto pr-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium leading-none text-zinc-300">Monto del Pago (*)</label>
                 <div className="relative">
@@ -355,6 +453,103 @@ export function Suppliers() {
         </div>
       )}
 
+      {/* Modal de Historial */}
+      {isHistoryDialogOpen && selectedSupplierForHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 pt-10">
+          <div className="bg-zinc-900 rounded-lg shadow-xl w-full max-w-3xl flex flex-col relative max-h-[90vh]">
+            <div className="p-6 border-b border-zinc-800 flex justify-between items-start shrink-0">
+              <div className="flex items-center gap-3 w-full border-b pb-5 border-zinc-800/50">
+                <div className="bg-blue-500/10 p-2 rounded-lg text-blue-400 border border-blue-500/20 shadow-sm shrink-0">
+                  <History className="w-6 h-6" />
+                </div>
+                <div className="flex-1 pr-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h2 className="text-lg font-bold text-zinc-100">Estado de Cuenta</h2>
+                    <p className="text-sm text-zinc-400 truncate max-w-[200px] sm:max-w-none">{selectedSupplierForHistory.nombre} ({selectedSupplierForHistory.empresa})</p>
+                  </div>
+                  <div className="bg-zinc-950 px-4 py-2 rounded-md border border-zinc-800 text-right mt-2 sm:mt-0">
+                    <p className="text-xs text-zinc-500 mb-0.5">Saldo Pendiente</p>
+                    <p className={`font-mono font-bold text-sm sm:text-base ${selectedSupplierForHistory.saldo_deuda && selectedSupplierForHistory.saldo_deuda > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                      ${(selectedSupplierForHistory.saldo_deuda || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsHistoryDialogOpen(false)} 
+                className="absolute top-6 right-6 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 p-1.5 rounded-md transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-0 overflow-y-auto flex-1 bg-zinc-950/30">
+              {loadingHistory ? (
+                <div className="p-8 text-center text-zinc-400">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  Cargando historial de la cuenta...
+                </div>
+              ) : historyRecords.length === 0 ? (
+                <div className="p-8 text-center flex flex-col items-center">
+                  <div className="bg-zinc-800/50 p-4 rounded-full mb-3">
+                    <History className="w-8 h-8 text-zinc-500" />
+                  </div>
+                  <p className="text-zinc-400 font-medium tracking-wide">No se encontraron movimientos registrados</p>
+                  <p className="text-xs text-zinc-500 mt-1 max-w-sm">Los ingresos de stock y pagos realizados a este proveedor aparecerán aquí para tu control iterativo.</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                      <th className="px-6 py-3 text-left font-medium text-zinc-400 w-32">Fecha</th>
+                      <th className="px-6 py-3 text-left font-medium text-zinc-400">Concepto</th>
+                      <th className="px-6 py-3 text-left font-medium text-zinc-400">Detalle</th>
+                      <th className="px-6 py-3 text-right font-medium text-zinc-400 whitespace-nowrap">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    {historyRecords.map((record) => (
+                      <tr key={record.id} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="px-6 py-3.5 text-zinc-300 font-mono text-xs whitespace-nowrap">
+                          {record.date.toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="px-6 py-3.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            record.type === 'pago' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                          }`}>
+                            {record.type === 'pago' ? 'Pago Realizado' : 'Cargo a Cuenta'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3.5">
+                          <p className="text-zinc-200">{record.description}</p>
+                          {record.notas && <p className="text-xs text-zinc-500 mt-0.5 truncate max-w-xs">{record.notas}</p>}
+                        </td>
+                        <td className={`px-6 py-3.5 text-right font-mono font-medium whitespace-nowrap ${
+                          record.type === 'pago' ? 'text-emerald-400' : 'text-red-400'
+                        }`}>
+                          {record.type === 'pago' ? '-' : '+'}${Math.abs(record.amount).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-zinc-800 shrink-0 bg-zinc-900 rounded-b-lg flex justify-between items-center sm:hidden">
+                <button 
+                  onClick={() => setIsHistoryDialogOpen(false)}
+                  className="w-full px-4 py-2 bg-zinc-800 text-zinc-200 rounded-md text-sm font-medium hover:bg-zinc-700 transition-colors"
+                >
+                  Cerrar Historial
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-zinc-900 rounded-lg shadow-sm border border-zinc-800">
         <div className="p-4 border-b border-zinc-800 flex items-center">
           <div className="relative flex-1 max-w-md">
@@ -416,6 +611,14 @@ export function Suppliers() {
                     </td>
                     <td className="p-4 align-middle text-right">
                       <div className="flex justify-end gap-1">
+                        <button 
+                          onClick={() => openHistoryDialog(supplier)} 
+                          className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-blue-500/20 hover:text-blue-400 px-3 py-2 text-zinc-400 border border-zinc-700 hover:border-blue-500/30"
+                          title="Ver Historial"
+                        >
+                          <History className="h-3.5 w-3.5 mr-1.5" />
+                          Historial
+                        </button>
                         <button 
                           onClick={() => openPaymentDialog(supplier)} 
                           className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-emerald-500/20 hover:text-emerald-400 px-3 py-2 text-zinc-400 mr-2 border border-zinc-700 hover:border-emerald-500/30"

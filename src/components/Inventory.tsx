@@ -9,6 +9,7 @@ interface StockEntry {
   cantidad: number;
   fecha: string;
   comprobante: string;
+  condicion_pago?: string;
   created_at: string;
   productos?: { nombre: string; sku: string };
 }
@@ -171,7 +172,7 @@ export function Inventory() {
       const { data, error } = await supabase
         .from('entradas_stock')
         .select(`
-          *,
+          id, producto_id, cantidad, fecha, comprobante, condicion_pago, created_at,
           productos (
             nombre,
             sku
@@ -225,7 +226,8 @@ export function Inventory() {
           producto_id: stockFormData.producto_id,
           cantidad: cantidad,
           fecha: stockFormData.fecha,
-          comprobante: stockFormData.comprobante
+          comprobante: stockFormData.comprobante,
+          condicion_pago: stockFormData.condicion_pago // Add condition
         }]);
 
       if (insertError) {
@@ -346,7 +348,8 @@ export function Inventory() {
               producto_id: newProd.id,
               cantidad: productData.stock_actual,
               fecha: formData.fecha_ingreso || new Date().toISOString().split('T')[0],
-              comprobante: formData.comprobante || ''
+              comprobante: formData.comprobante || '',
+              condicion_pago: formData.condicion_pago // Add condition
             }]);
           
           if (stockError) {
@@ -762,6 +765,7 @@ export function Inventory() {
                       <tr>
                         <th className="px-4 py-3">Fecha</th>
                         <th className="px-4 py-3">Producto</th>
+                        <th className="px-4 py-3">Condición / Pago</th>
                         <th className="px-4 py-3">Comprobante</th>
                         <th className="px-4 py-3 text-right">Cantidad</th>
                       </tr>
@@ -775,6 +779,13 @@ export function Inventory() {
                           <td className="px-4 py-3">
                             <div className="font-medium text-zinc-100">{entry.productos?.nombre}</div>
                             <div className="text-xs text-zinc-400">{entry.productos?.sku}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {entry.condicion_pago === 'cuenta_corriente' ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">A Cuenta Corriente</span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Contado / Efvo</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             {entry.comprobante ? (
