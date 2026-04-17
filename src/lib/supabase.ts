@@ -12,6 +12,17 @@ export type Proveedor = {
   nombre: string;
   empresa: string;
   telefono: string;
+  saldo_deuda?: number;
+  created_at?: string;
+};
+
+export type PagoProveedor = {
+  id: string;
+  proveedor_id: string;
+  monto: number;
+  metodo_pago: string;
+  fecha: string;
+  notas: string;
   created_at?: string;
 };
 

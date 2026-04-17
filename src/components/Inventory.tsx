@@ -40,7 +40,8 @@ export function Inventory() {
     precio_suelto: '',
     precio_costo_suelto: '',
     fecha_ingreso: new Date().toISOString().split('T')[0],
-    comprobante: ''
+    comprobante: '',
+    condicion_pago: 'contado'
   });
 
   // Stock entry form state
@@ -48,8 +49,12 @@ export function Inventory() {
     producto_id: '',
     cantidad: '',
     fecha: new Date().toISOString().split('T')[0],
-    comprobante: ''
+    comprobante: '',
+    condicion_pago: 'contado'
   });
+
+  const [stockSearchTerm, setStockSearchTerm] = useState('');
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -118,7 +123,10 @@ export function Inventory() {
       proveedor_id: product.proveedor_id || '',
       peso_kg: product.peso_kg ? product.peso_kg.toString() : '',
       precio_suelto: product.precio_suelto ? product.precio_suelto.toString() : '',
-      precio_costo_suelto: product.precio_costo_suelto ? product.precio_costo_suelto.toString() : ''
+      precio_costo_suelto: product.precio_costo_suelto ? product.precio_costo_suelto.toString() : '',
+      fecha_ingreso: new Date().toISOString().split('T')[0],
+      comprobante: '',
+      condicion_pago: 'contado'
     });
     setIsDialogOpen(true);
   };
@@ -146,11 +154,14 @@ export function Inventory() {
 
   const openStockDialog = () => {
     setStockFormData({
-      producto_id: products.length > 0 ? products[0].id : '',
+      producto_id: '',
       cantidad: '',
       fecha: new Date().toISOString().split('T')[0],
-      comprobante: ''
+      comprobante: '',
+      condicion_pago: 'contado'
     });
+    setStockSearchTerm('');
+    setIsStockDropdownOpen(false);
     setIsStockDialogOpen(true);
   };
 
@@ -234,6 +245,27 @@ export function Inventory() {
 
       if (updateError) throw updateError;
 
+      // 3. Update Supplier Debt if 'cuenta_corriente'
+      if (stockFormData.condicion_pago === 'cuenta_corriente' && product.proveedor_id) {
+        const totalCosto = cantidad * Number(product.precio_costo);
+        const prov = proveedores.find(p => p.id === product.proveedor_id);
+        
+        if (prov) {
+          const newDebt = Number(prov.saldo_deuda || 0) + totalCosto;
+          const { error: debtError } = await supabase
+            .from('proveedores')
+            .update({ saldo_deuda: newDebt })
+            .eq('id', prov.id);
+            
+          if (debtError) {
+            console.error('Error updating supplier debt:', debtError);
+            toast.error('Se ingresó el stock, pero hubo un error al actualizar la cuenta corriente');
+          } else {
+            toast.success(`Cuenta corriente actualizada: sumados $${totalCosto}`);
+          }
+        }
+      }
+
       toast.success('Mercadería ingresada exitosamente');
       setIsStockDialogOpen(false);
       fetchData();
@@ -275,7 +307,29 @@ export function Inventory() {
           .update(productData)
           .eq('id', editingProduct.id);
         if (error) throw error;
-        toast.success('Producto actualizado exitosamente');
+
+        // Actualizar cuenta corriente retrospectivamente si el usuario lo eligió al editar
+        if (formData.condicion_pago === 'cuenta_corriente' && productData.proveedor_id) {
+          const totalCosto = productData.stock_actual * productData.precio_costo;
+          const prov = proveedores.find(p => p.id === productData.proveedor_id);
+          
+          if (prov && totalCosto > 0) {
+            const newDebt = Number(prov.saldo_deuda || 0) + totalCosto;
+            const { error: debtError } = await supabase
+              .from('proveedores')
+              .update({ saldo_deuda: newDebt })
+              .eq('id', prov.id);
+              
+            if (debtError) {
+              console.error('Error updating supplier debt on edit:', debtError);
+              toast.error('Producto editado, pero hubo un error al sumar la deuda');
+            } else {
+              toast.success(`Deuda retrospectiva añadida: $${totalCosto}`);
+            }
+          }
+        } else {
+          toast.success('Producto actualizado exitosamente');
+        }
       } else {
         const { data: newProd, error } = await supabase
           .from('productos')
@@ -297,6 +351,24 @@ export function Inventory() {
           
           if (stockError) {
             console.error('Error recording initial stock entry:', stockError);
+          }
+          
+          // Actualizar cuenta corriente si es necesario
+          if (formData.condicion_pago === 'cuenta_corriente' && productData.proveedor_id) {
+            const totalCosto = productData.stock_actual * productData.precio_costo;
+            const prov = proveedores.find(p => p.id === productData.proveedor_id);
+            
+            if (prov) {
+              const newDebt = Number(prov.saldo_deuda || 0) + totalCosto;
+              const { error: debtError } = await supabase
+                .from('proveedores')
+                .update({ saldo_deuda: newDebt })
+                .eq('id', prov.id);
+                
+              if (debtError) {
+                console.error('Error updating supplier debt:', debtError);
+              }
+            }
           }
         }
 
@@ -422,7 +494,7 @@ export function Inventory() {
               {!editingProduct && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="fecha_ingreso" className="text-sm font-medium leading-none">Fecha de Ingreso</label>
+                    <label htmlFor="fecha_ingreso" className="text-sm font-medium leading-none">Fecha de Ingreso de Stock Inicial</label>
                     <input id="fecha_ingreso" name="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent [color-scheme:dark]" />
                   </div>
                   <div className="space-y-2">
@@ -440,7 +512,7 @@ export function Inventory() {
                     name="proveedor_id" 
                     value={formData.proveedor_id} 
                     onChange={handleInputChange} 
-                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     required
                   >
                     <option value="" disabled>Seleccione un proveedor</option>
@@ -463,6 +535,28 @@ export function Inventory() {
                     placeholder="Ej: 15"
                     className="flex h-10 w-full rounded-md border border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" 
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <label htmlFor="condicion_pago" className="text-sm font-medium leading-none text-zinc-100">
+                    {editingProduct ? 'Ajuste de Cuenta Corriente' : 'Condición de Pago (Stock Inicial)'}
+                  </label>
+                  <select 
+                    id="condicion_pago" 
+                    name="condicion_pago" 
+                    value={formData.condicion_pago} 
+                    onChange={handleInputChange} 
+                    disabled={!formData.proveedor_id || Number(formData.stock_actual) <= 0}
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+                  >
+                    <option value="contado">{editingProduct ? 'No hacer cambios (Ya pagado/registrado)' : 'Contado / Ya Pagado'}</option>
+                    {formData.proveedor_id && <option value="cuenta_corriente">{editingProduct ? 'Sumar valor del stock a la cuenta corriente' : 'Cuenta Corriente (Sumar a deuda)'}</option>}
+                  </select>
+                  {(!formData.proveedor_id || Number(formData.stock_actual) <= 0) && (
+                    <p className="text-[10px] text-zinc-400">Seleccione proveedor y stock inicial mayor a 0 para usar cuenta corriente.</p>
+                  )}
                 </div>
               </div>
 
@@ -520,21 +614,50 @@ export function Inventory() {
             <p className="text-sm text-zinc-400 mb-6">Registra la entrada de nuevo stock con su remito o factura.</p>
             
             <form onSubmit={handleStockSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="producto_id" className="text-sm font-medium text-zinc-300">Producto</label>
-                <select 
-                  id="producto_id" 
-                  name="producto_id" 
-                  value={stockFormData.producto_id} 
-                  onChange={handleStockInputChange} 
-                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="" disabled>Seleccione un producto</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.nombre} (Stock actual: {p.stock_actual})</option>
-                  ))}
-                </select>
+              <div className="space-y-2 relative">
+                <label className="text-sm font-medium text-zinc-300">Buscar Producto</label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    placeholder="Escribe para buscar..."
+                    value={stockSearchTerm}
+                    onChange={(e) => {
+                      setStockSearchTerm(e.target.value);
+                      setIsStockDropdownOpen(true);
+                      if (stockFormData.producto_id) {
+                        setStockFormData({...stockFormData, producto_id: ''});
+                      }
+                    }}
+                    onFocus={() => setIsStockDropdownOpen(true)}
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-zinc-100 placeholder:text-zinc-500"
+                  />
+                  {isStockDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {products.filter(p => p.nombre.toLowerCase().includes(stockSearchTerm.toLowerCase()) || p.sku.toLowerCase().includes(stockSearchTerm.toLowerCase())).length === 0 ? (
+                        <div className="px-3 py-3 text-sm text-zinc-400">No se encontraron productos...</div>
+                      ) : (
+                        products.filter(p => p.nombre.toLowerCase().includes(stockSearchTerm.toLowerCase()) || p.sku.toLowerCase().includes(stockSearchTerm.toLowerCase())).map(p => (
+                          <div
+                            key={p.id}
+                            onMouseDown={(e) => e.preventDefault()} // Mantiene el foco en el input
+                            onClick={() => {
+                              setStockFormData({...stockFormData, producto_id: p.id});
+                              setStockSearchTerm(`${p.nombre} (Stock: ${p.stock_actual})`);
+                              setIsStockDropdownOpen(false);
+                            }}
+                            className="px-3 py-2 hover:bg-zinc-700 cursor-pointer text-sm text-zinc-100 border-b border-zinc-700/50 last:border-0"
+                          >
+                            <div className="font-medium inline-block mr-2">{p.nombre}</div>
+                            <span className="text-xs text-blue-400 font-semibold">[Stock: {p.stock_actual}]</span>
+                            <div className="text-xs text-zinc-400 mt-1">SKU: {p.sku} | Proveedor: {getSupplierName(p)}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* Hidden input to ensure form validation requires a selected product */}
+                <input type="hidden" name="producto_id" value={stockFormData.producto_id} required />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -566,17 +689,38 @@ export function Inventory() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="comprobante" className="text-sm font-medium text-zinc-300">Nº Remito / Factura</label>
-                <input 
-                  id="comprobante" 
-                  name="comprobante" 
-                  type="text" 
-                  value={stockFormData.comprobante} 
-                  onChange={handleStockInputChange} 
-                  placeholder="Ej: R-0001-00001234"
-                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="comprobante" className="text-sm font-medium text-zinc-300">Nº Remito / Factura</label>
+                  <input 
+                    id="comprobante" 
+                    name="comprobante" 
+                    type="text" 
+                    value={stockFormData.comprobante} 
+                    onChange={handleStockInputChange} 
+                    placeholder="Ej: R-0001-00001234"
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="stock_condicion_pago" className="text-sm font-medium text-zinc-300">Condición de Pago</label>
+                  <select 
+                    id="stock_condicion_pago" 
+                    name="condicion_pago" 
+                    value={stockFormData.condicion_pago} 
+                    onChange={handleStockInputChange}
+                    disabled={!stockFormData.producto_id || !products.find(p => p.id === stockFormData.producto_id)?.proveedor_id}
+                    className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <option value="contado">Contado / Pagado</option>
+                    {stockFormData.producto_id && products.find(p => p.id === stockFormData.producto_id)?.proveedor_id && (
+                      <option value="cuenta_corriente">Cuenta Corriente (Sumar a deuda)</option>
+                    )}
+                  </select>
+                  {(!stockFormData.producto_id || !products.find(p => p.id === stockFormData.producto_id)?.proveedor_id) && (
+                    <p className="text-[10px] text-zinc-400">El producto debe tener proveedor asignado.</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
